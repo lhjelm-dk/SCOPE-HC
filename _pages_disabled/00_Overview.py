@@ -92,21 +92,21 @@ def main() -> None:
 
     # Workflow Diagram (moved out of expander)
     st.markdown("### Estimation Workflow")
+    
+    colors = [
+        "#CAEDFE",  # Box 1 - lightest gray
+        "#EDEDE8",  # Box 2
+        "#EAEADF",  # Box 3
+        "#E7E7D7",  # Box 4
+        "#E4E4CF",  # Box 5
+        "#F1F197",  # Box 6
+        "#DEFEBF",  # Box 7
+        "#C6E0B4",  # Box 8 - light green
+    ]
+    
+    # Try graphviz first, fallback to plotly for cloud deployments
     try:
         import graphviz as gv
-
-
-        colors = [
-            "#CAEDFE",  # Box 1 - lightest gray
-            "#EDEDE8",  # Box 2
-            "#EAEADF",  # Box 3
-            "#E7E7D7",  # Box 4
-            "#E4E4CF",  # Box 5
-            "#F1F197",  # Box 6
-            "#DEFEBF",  # Box 7
-            "#C6E0B4",  # Box 8 - light green
-        ]
-
         dot = gv.Digraph(graph_attr={"rankdir": "LR", "splines": "spline"})
         dot.node("FLUID_TYPE", "Select Fluid Case\n(Oil, Gas, or Oil+Gas)", 
                  shape="box", style="rounded,filled", fillcolor=colors[0])
@@ -136,8 +136,108 @@ def main() -> None:
             ]
         )
         st.graphviz_chart(dot, use_container_width=True)
-    except ImportError:
-        st.info("💡 Install graphviz to view the workflow diagram: `pip install graphviz`")
+    except (ImportError, Exception):
+        # Fallback to Plotly for cloud deployments where graphviz binary is not available
+        import plotly.graph_objects as go
+        
+        # Define nodes with positions (horizontal layout, left to right)
+        node_data = [
+            {"id": "FLUID_TYPE", "label": "Select Fluid Case<br>(Oil, Gas, or Oil+Gas)", "x": 0, "color": colors[0]},
+            {"id": "GRV", "label": "Gross Rock Volume (GRV)<br>(choose calculation method)", "x": 1, "color": colors[1]},
+            {"id": "FILL", "label": "HC Fill & Contacts<br>(Spill, HC, optional GOC)", "x": 2, "color": colors[2]},
+            {"id": "ROCK", "label": "NtG, Porosity & Saturation<br>(reservoir properties)", "x": 3, "color": colors[3]},
+            {"id": "FLUID", "label": "Fluids & Recovery<br>(Bg, 1/Bo, GOR, CGR, RFs)", "x": 4, "color": colors[4]},
+            {"id": "DEP", "label": "Dependencies (opt.)<br>(correlations)", "x": 5, "color": colors[5]},
+            {"id": "RES", "label": "Results & THR<br>(in-place, recoverable, BOE)", "x": 6, "color": colors[6]},
+            {"id": "SENS", "label": "Check Sensitivity<br>(tornado plots)", "x": 7, "color": colors[7]},
+        ]
+        
+        # Define edges (connections)
+        edges = [
+            ("FLUID_TYPE", "GRV"),
+            ("GRV", "FILL"),
+            ("FILL", "ROCK"),
+            ("ROCK", "FLUID"),
+            ("FLUID", "DEP"),
+            ("DEP", "RES"),
+            ("RES", "SENS"),
+        ]
+        
+        # Create figure
+        fig = go.Figure()
+        
+        # Add arrows (edges) as annotations with arrow shapes
+        for start_id, end_id in edges:
+            start_node = next(n for n in node_data if n["id"] == start_id)
+            end_node = next(n for n in node_data if n["id"] == end_id)
+            
+            # Calculate arrow position (from right edge of start to left edge of end)
+            start_x = start_node["x"] + 0.45
+            end_x = end_node["x"] - 0.45
+            
+            fig.add_annotation(
+                x=end_x,
+                y=0,
+                ax=start_x,
+                ay=0,
+                xref="x",
+                yref="y",
+                axref="x",
+                ayref="y",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1.5,
+                arrowwidth=2,
+                arrowcolor="#666",
+            )
+        
+        # Add node boxes as shapes with text annotations
+        for node in node_data:
+            # Add rounded rectangle shape
+            fig.add_shape(
+                type="rect",
+                x0=node["x"] - 0.4,
+                y0=-0.15,
+                x1=node["x"] + 0.4,
+                y1=0.15,
+                fillcolor=node["color"],
+                line=dict(color="#333", width=2),
+                xref="x",
+                yref="y",
+            )
+            
+            # Add text annotation
+            fig.add_annotation(
+                x=node["x"],
+                y=0,
+                text=node["label"],
+                showarrow=False,
+                font=dict(size=9, color="#000"),
+                xref="x",
+                yref="y",
+            )
+        
+        # Update layout
+        fig.update_layout(
+            xaxis=dict(
+                range=[-0.6, 7.6],
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+            ),
+            yaxis=dict(
+                range=[-0.3, 0.3],
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+            ),
+            plot_bgcolor='white',
+            height=180,
+            margin=dict(l=10, r=10, t=10, b=10),
+            showlegend=False,
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
     with st.expander("Assumptions and formulas", expanded=False):
         st.markdown(

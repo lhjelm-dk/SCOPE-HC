@@ -1,0 +1,12 @@
+# Normalise line endings: LF in the repository, native in the working tree.
+# You develop on Windows; Streamlit Cloud runs Linux. This keeps diffs clean
+# regardless of which machine (or the GitHub web editor) writes a file.
+* text=auto eol=lf
+
+# Binary assets - never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.xlsx binary
+*.pdf binary

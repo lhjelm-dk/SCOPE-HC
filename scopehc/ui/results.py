@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from scopehc.compute import compute_results
-from scopehc.utils import validate_rf_fractions, validate_fractions
+from scopehc.compute import compute_results, resolve_grv_split
+from scopehc.utils import validate_rf_fractions
 
 from .common import (
     init_theme,
@@ -66,14 +66,6 @@ def render() -> None:
     sRF_assoc = np.asarray(
         st.session_state.get("sRF_assoc_gas", sRF_oil), dtype=float
     )
-    # f_oil should be a scalar, but handle case where it might be an array
-    f_oil_val = st.session_state.get("f_oil", 0.5)
-    if isinstance(f_oil_val, np.ndarray):
-        # If f_oil is an array, use its mean or first value
-        f_oil_val = float(np.mean(f_oil_val)) if len(f_oil_val) > 0 else 0.5
-    else:
-        f_oil_val = float(f_oil_val)
-    f_oil = np.full(num_sims, f_oil_val)
     sGOR = np.asarray(st.session_state["sGOR"], dtype=float)
     sCY = st.session_state.get("sCY")
     sRF_cond = st.session_state.get("sRF_cond")
@@ -91,40 +83,22 @@ def render() -> None:
     }
     is_depth_based = grv_option in depth_based_methods
     
-    GRV_oil_m3 = st.session_state.get("sGRV_oil_m3")
-    GRV_gas_m3 = st.session_state.get("sGRV_gas_m3")
-    
-    # Convert to arrays and ensure they're at least 1D
-    if GRV_oil_m3 is not None:
-        GRV_oil_m3 = np.atleast_1d(np.asarray(GRV_oil_m3, dtype=float))
-        if len(GRV_oil_m3) != num_sims:
-            GRV_oil_m3 = None  # Size mismatch, will recalculate
-    if GRV_gas_m3 is not None:
-        GRV_gas_m3 = np.atleast_1d(np.asarray(GRV_gas_m3, dtype=float))
-        if len(GRV_gas_m3) != num_sims:
-            GRV_gas_m3 = None  # Size mismatch, will recalculate
-    
-    # If split arrays don't exist, recalculate based on current fluid_type
-    if GRV_oil_m3 is None or GRV_gas_m3 is None:
-        if fluid_type == "Oil":
-            GRV_oil_m3 = sGRV_m3_final.copy()
-            GRV_gas_m3 = np.zeros_like(sGRV_m3_final)
-        elif fluid_type == "Gas":
-            GRV_oil_m3 = np.zeros_like(sGRV_m3_final)
-            GRV_gas_m3 = sGRV_m3_final.copy()
-        else:  # Oil + Gas
-            # For depth-based methods, we should NOT use f_oil split - the values should already be calculated
-            # But if they're missing, fall back to f_oil split as a last resort
-            if is_depth_based:
-                # For depth-based, try to preserve existing values even if size doesn't match
-                # This is a fallback - ideally the values should already be set correctly
-                st.warning(
-                    "⚠️ Depth-based GRV split arrays not found. "
-                    "Please return to GRV page and ensure the calculation completes."
-                )
-            # Use f_oil to split (f_oil_val already calculated above)
-            GRV_oil_m3 = sGRV_m3_final * f_oil_val
-            GRV_gas_m3 = sGRV_m3_final * (1.0 - f_oil_val)
+    # Shared with compute.run_simulation and collect_all_trial_data so all three
+    # agree. Critically, fluid_type is applied FIRST: this page previously only
+    # consulted fluid_type when the split arrays were *missing*, so a stale
+    # Oil+Gas split survived a switch to Oil and the page reported gas volumes
+    # for an oil-only case.
+    GRV_oil_m3, GRV_gas_m3 = resolve_grv_split(
+        fluid_type, sGRV_m3_final, st.session_state, grv_option
+    )
+
+    if fluid_type == "Oil + Gas" and is_depth_based:
+        stored_oil = st.session_state.get("sGRV_oil_m3")
+        if stored_oil is None or len(np.atleast_1d(np.asarray(stored_oil))) != num_sims:
+            st.warning(
+                "⚠️ Depth-based GRV split arrays not found. "
+                "Please return to GRV page and ensure the calculation completes."
+            )
 
     sCY_arr = None if sCY is None else np.asarray(sCY, dtype=float)
     sRF_cond_arr = None if sRF_cond is None else np.asarray(sRF_cond, dtype=float)
@@ -132,13 +106,10 @@ def render() -> None:
     sRF_oil, sRF_gas, sRF_cond_arr, rf_warnings = validate_rf_fractions(
         sRF_oil, sRF_gas, sRF_cond_arr
     )
-    f_oil, frac_warnings = validate_fractions(f_oil)
-
-    warnings = rf_warnings + frac_warnings
-    if warnings:
+    if rf_warnings:
         st.warning(
             "⚠️ Parameter validation warnings:\n"
-            + "\n".join(f"• {warning}" for warning in warnings)
+            + "\n".join(f"• {warning}" for warning in rf_warnings)
         )
 
     # Get saturation arrays if available
@@ -149,7 +120,6 @@ def render() -> None:
         GRV_m3=sGRV_m3_final,
         NtG=sNtG,
         Por=sp,
-        f_oil=f_oil,
         RF_oil=sRF_oil,
         RF_gas=sRF_gas,
         Bg_rb_per_scf=sBg,
@@ -157,6 +127,9 @@ def render() -> None:
         GOR_scf_per_STB=sGOR,
         CY_STB_per_MMscf=sCY_arr,
         RF_cond=sRF_cond_arr,
+        # Was omitted entirely, so associated gas was computed with an implicit
+        # RF of 1.0 here while other paths used the real value.
+        RF_assoc=sRF_assoc,
         gas_scf_per_boe=gas_scf_per_boe,
         GRV_oil_m3=GRV_oil_m3,
         GRV_gas_m3=GRV_gas_m3,
@@ -167,8 +140,8 @@ def render() -> None:
     PV_total_m3 = res["PV_total_m3"]
     PV_oil_m3 = res["PV_oil_m3"]
     PV_gas_m3 = res["PV_gas_m3"]
-    V_oil_insitu_m3 = res["V_oil_insitu_m3"]
-    V_gas_insitu_m3 = res["V_gas_insitu_m3"]
+    STOIIP_STB = res["STOIIP_STB"]
+    GIIP_scf = res["GIIP_scf"]
     Oil_STB_rec = res["Oil_STB_rec"]
     Gas_scf_rec = res["Gas_free_scf_rec"]
     AssocGas_scf_rec = res["Gas_assoc_scf_rec"]
@@ -225,8 +198,18 @@ def render() -> None:
         oil_unit = "Mm³"
         gas_unit = "Bm³"
 
-    V_oil_insitu_Mm3 = V_oil_insitu_m3 / 1e6
-    V_gas_insitu_Mm3 = V_gas_insitu_m3 / 1e6
+    # STOIIP is in STB and GIIP in scf - they were previously both divided by 1e6
+    # and labelled "×10^6 m³", which is not the unit either one is in.
+    if unit_system == "oilfield":
+        STOIIP_display = STOIIP_STB / 1e6
+        GIIP_display = GIIP_scf / 1e9
+        stoiip_unit = "MMSTB"
+        giip_unit = "Bscf"
+    else:
+        STOIIP_display = STOIIP_STB * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
+        GIIP_display = GIIP_scf * UNIT_CONVERSIONS["scf_to_m3"] / 1e9
+        stoiip_unit = "Mm³"
+        giip_unit = "Bm³"
 
     if unit_system == "oilfield":
         Cond_display = Cond_rec_STB / 1e6
@@ -236,11 +219,11 @@ def render() -> None:
         cond_unit = "Mm³"
 
     st.markdown("---")
-    st.markdown("## In-situ (In-place) Volumes")
+    st.markdown("## In-place Volumes (STOIIP / GIIP)")
 
     insitu_results = [
-        ("In-situ Oil Volume", V_oil_insitu_Mm3, "×10^6 m³", 2),
-        ("In-situ Gas Volume", V_gas_insitu_Mm3, "×10^6 m³", 2),
+        ("Oil in Place (STOIIP)", STOIIP_display, stoiip_unit, 2),
+        ("Gas in Place (GIIP)", GIIP_display, giip_unit, 2),
     ]
 
     for title, arr, unit, decimals in insitu_results:

@@ -276,9 +276,15 @@ def compute_results(
     Gas_assoc_BOE = safe_div(Gas_assoc_scf_rec, gas_scf_per_boe)
     Total_gas_BOE = Gas_free_BOE + Gas_assoc_BOE
     
-    # In-situ volumes (before applying recovery factors, using hydrocarbon-saturated pore volumes)
-    V_oil_insitu_m3 = (PV_oil_hc_m3 * RB_PER_M3) * InvBo_STB_per_rb
-    V_gas_insitu_m3 = safe_div((PV_gas_hc_m3 * RB_PER_M3), Bg_rb_per_scf)
+    # In-place volumes at SURFACE conditions, before recovery factors.
+    # NOTE ON UNITS: these are stock-tank barrels and standard cubic feet, NOT m³.
+    #   PV_hc [m³] x RB_PER_M3 [rb/m³] = reservoir barrels
+    #   rb x InvBo [STB/rb]            = STB
+    #   rb / Bg  [rb/scf]              = scf
+    # They were previously named V_oil_insitu_m3 / V_gas_insitu_m3, which invited
+    # callers to convert them a second time.
+    STOIIP_STB = (PV_oil_hc_m3 * RB_PER_M3) * InvBo_STB_per_rb
+    GIIP_scf = safe_div((PV_gas_hc_m3 * RB_PER_M3), Bg_rb_per_scf)
     
     results = {
         # In-place volumes
@@ -287,9 +293,9 @@ def compute_results(
         'PV_gas_m3': PV_gas_m3,
         'PV_oil_hc_m3': PV_oil_hc_m3,
         'PV_gas_hc_m3': PV_gas_hc_m3,
-        'V_oil_insitu_m3': V_oil_insitu_m3,
-        'V_gas_insitu_m3': V_gas_insitu_m3,
-        
+        'STOIIP_STB': STOIIP_STB,
+        'GIIP_scf': GIIP_scf,
+
         # Recoverable volumes
         'Oil_STB_rec': Oil_STB_rec,
         'Gas_free_scf_rec': Gas_free_scf_rec,
@@ -310,6 +316,87 @@ def compute_results(
         key: np.nan_to_num(val, nan=0.0, posinf=0.0, neginf=0.0)
         for key, val in results.items()
     }
+
+
+def resolve_f_oil(ss, grv_option: str = "Direct GRV") -> float:
+    """
+    Resolve the scalar oil fraction for methods that split GRV by fraction.
+
+    Prefers the method-specific key, then the generic one, then 0.5.
+    """
+    method_key = {
+        "Direct GRV": "direct_f_oil",
+        "Area × Thickness × GCF": "atgcf_f_oil",
+    }.get(grv_option)
+
+    for key in (method_key, "f_oil"):
+        if not key or key not in ss:
+            continue
+        val = ss[key]
+        if isinstance(val, np.ndarray):
+            if val.size == 0:
+                continue
+            val = float(np.mean(val))
+        try:
+            return float(np.clip(float(val), 0.0, 1.0))
+        except (TypeError, ValueError):
+            continue
+    return 0.5
+
+
+def resolve_grv_split(fluid_type: str, GRV_m3, ss, grv_option: str = "Direct GRV"):
+    """
+    Split total GRV into oil and gas volumes. Single source of truth.
+
+    fluid_type is authoritative and applied FIRST: choosing "Oil" or "Gas" always
+    overrides any cached split arrays. That ordering is what prevents a stale
+    Oil+Gas split from surviving a change of fluid type and producing, say, gas
+    volumes in an oil-only case.
+
+    Args:
+        fluid_type: "Oil" | "Gas" | "Oil + Gas"
+        GRV_m3: total gross rock volume array (m³)
+        ss: st.session_state or any mapping
+        grv_option: GRV method, used to pick method-specific fallback keys
+
+    Returns:
+        (GRV_oil_m3, GRV_gas_m3) - both arrays the same shape as GRV_m3
+    """
+    GRV_m3 = np.asarray(GRV_m3, dtype=float)
+    n = GRV_m3.size
+
+    if fluid_type == "Oil":
+        return GRV_m3.copy(), np.zeros_like(GRV_m3)
+    if fluid_type == "Gas":
+        return np.zeros_like(GRV_m3), GRV_m3.copy()
+
+    # Oil + Gas: prefer an explicitly computed split (e.g. from a GOC).
+    def _sized_array(key):
+        val = ss.get(key)
+        if val is None:
+            return None
+        arr = np.atleast_1d(np.asarray(val, dtype=float))
+        return arr if arr.size == n else None
+
+    oil = _sized_array("sGRV_oil_m3")
+    gas = _sized_array("sGRV_gas_m3")
+
+    if oil is None or gas is None:
+        method_keys = {
+            "Direct GRV": ("direct_GRV_oil_m3", "direct_GRV_gas_m3"),
+            "Area × Thickness × GCF": ("atgcf_GRV_oil_m3", "atgcf_GRV_gas_m3"),
+        }.get(grv_option)
+        if method_keys:
+            oil = oil if oil is not None else _sized_array(method_keys[0])
+            gas = gas if gas is not None else _sized_array(method_keys[1])
+
+    # Last resort: split by oil fraction.
+    if oil is None or gas is None:
+        f_oil = resolve_f_oil(ss, grv_option)
+        oil = GRV_m3 * f_oil
+        gas = GRV_m3 * (1.0 - f_oil)
+
+    return oil, gas
 
 
 def run_simulation(inputs: dict, run_id: int, seed: int | None, no_cache_nonce: int = 0) -> dict:
@@ -376,59 +463,12 @@ def run_simulation(inputs: dict, run_id: int, seed: int | None, no_cache_nonce: 
     fluid_type = inputs.get("fluid_type", "Oil + Gas")
     grv_option = inputs.get("grv_option", "Direct GRV")
     
-    # CRITICAL: Handle fluid_type FIRST to override any stale GRV arrays
-    # This ensures that if fluid_type changed, we use the correct split regardless of cached arrays
-    if fluid_type == "Oil":
-        # All GRV is oil - override any cached split
-        GRV_oil_m3 = GRV_m3.copy()
-        GRV_gas_m3 = np.zeros_like(GRV_m3)
-    elif fluid_type == "Gas":
-        # All GRV is gas - override any cached split
-        GRV_oil_m3 = np.zeros_like(GRV_m3)
-        GRV_gas_m3 = GRV_m3.copy()
-    else:  # Oil + Gas - try to get split from cached arrays
-        GRV_oil_m3 = None
-        GRV_gas_m3 = None
-        
-        # Get split GRV arrays based on CURRENT method
-        if "sGRV_oil_m3" in st.session_state and "sGRV_gas_m3" in st.session_state:
-            GRV_oil_m3 = np.asarray(st.session_state["sGRV_oil_m3"], dtype=float)
-            GRV_gas_m3 = np.asarray(st.session_state["sGRV_gas_m3"], dtype=float)
-        elif grv_option == "Direct GRV":
-            if "direct_GRV_oil_m3" in st.session_state:
-                GRV_oil_m3 = np.asarray(st.session_state["direct_GRV_oil_m3"], dtype=float)
-            if "direct_GRV_gas_m3" in st.session_state:
-                GRV_gas_m3 = np.asarray(st.session_state["direct_GRV_gas_m3"], dtype=float)
-        elif grv_option == "Area × Thickness × GCF":
-            if "atgcf_GRV_oil_m3" in st.session_state:
-                GRV_oil_m3 = np.asarray(st.session_state["atgcf_GRV_oil_m3"], dtype=float)
-            if "atgcf_GRV_gas_m3" in st.session_state:
-                GRV_gas_m3 = np.asarray(st.session_state["atgcf_GRV_gas_m3"], dtype=float)
-        
-        # Fallback: use f_oil if split GRV not available
-        if GRV_oil_m3 is None or GRV_gas_m3 is None:
-            f_oil_val = 0.5
-            if grv_option == "Direct GRV" and "direct_f_oil" in st.session_state:
-                f_oil_val = float(st.session_state["direct_f_oil"])
-            elif grv_option == "Area × Thickness × GCF" and "atgcf_f_oil" in st.session_state:
-                f_oil_val = float(st.session_state["atgcf_f_oil"])
-            elif "f_oil" in st.session_state:
-                f_oil_val = float(st.session_state["f_oil"])
-            
-            if GRV_oil_m3 is None:
-                GRV_oil_m3 = GRV_m3 * f_oil_val
-            if GRV_gas_m3 is None:
-                GRV_gas_m3 = GRV_m3 * (1.0 - f_oil_val)
-    
-    # Get f_oil array - ensure we extract scalar value if f_oil is an array
-    f_oil_val = st.session_state.get("f_oil", 0.5)
-    if isinstance(f_oil_val, np.ndarray):
-        # If f_oil is an array, use its mean or first value
-        f_oil_val = float(np.mean(f_oil_val)) if len(f_oil_val) > 0 else 0.5
-    else:
-        f_oil_val = float(f_oil_val)
-    f_oil = np.full(num_sims, f_oil_val)
-    
+    # Single source of truth for the split - fluid_type is applied first, so a
+    # stale Oil+Gas split cannot survive a change of fluid type.
+    GRV_oil_m3, GRV_gas_m3 = resolve_grv_split(
+        fluid_type, GRV_m3, st.session_state, grv_option
+    )
+
     # Derive saturation samples
     mode = inputs.get("sat_mode", "Global")
     sat = derive_saturation_samples(rng, num_sims, mode, st.session_state)
@@ -446,7 +486,6 @@ def run_simulation(inputs: dict, run_id: int, seed: int | None, no_cache_nonce: 
         GRV_m3=GRV_m3,
         NtG=NtG,
         Por=Por,
-        f_oil=f_oil,
         RF_oil=RF_oil,
         RF_gas=RF_gas,
         Bg_rb_per_scf=Bg,

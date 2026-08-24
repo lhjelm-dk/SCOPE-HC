@@ -60,7 +60,7 @@ from scopehc.sampling import (
     apply_correlation,
     sample_scalar_dist,
 )
-from scopehc.compute import compute_results
+from scopehc.compute import compute_results, resolve_grv_split
 from scopehc.plots import (
     color_for,
     hist_and_cdf,
@@ -3244,74 +3244,23 @@ def collect_all_trial_data() -> Optional[Dict[str, List[float]]]:
     fluid_type = st.session_state.get("fluid_type", "Oil + Gas")
     grv_option = st.session_state.get("grv_option", "Direct GRV")
     
-    # CRITICAL: Handle fluid_type FIRST to override any stale GRV arrays
-    # This ensures that if fluid_type changed, we use the correct split regardless of cached arrays
-    if fluid_type == "Oil":
-        # All GRV is oil - override any cached split
-        GRV_oil_m3 = grv.copy()
-        GRV_gas_m3 = np.zeros_like(grv)
-    elif fluid_type == "Gas":
-        # All GRV is gas - override any cached split
-        GRV_oil_m3 = np.zeros_like(grv)
-        GRV_gas_m3 = grv.copy()
-    else:  # Oil + Gas - try to get split from cached arrays
-        GRV_oil_m3 = None
-        GRV_gas_m3 = None
-        
-        # Get split GRV arrays based on CURRENT selected method
-        # Check for split GRV from depth-based methods first (they're already stored)
-        if "sGRV_oil_m3" in st.session_state and "sGRV_gas_m3" in st.session_state:
-            GRV_oil_m3 = np.asarray(st.session_state["sGRV_oil_m3"], dtype=float)
-            GRV_gas_m3 = np.asarray(st.session_state["sGRV_gas_m3"], dtype=float)
-        elif grv_option == "Direct GRV":
-            # Get from direct method split
-            if "direct_GRV_oil_m3" in st.session_state:
-                GRV_oil_m3 = np.asarray(st.session_state["direct_GRV_oil_m3"], dtype=float)
-            if "direct_GRV_gas_m3" in st.session_state:
-                GRV_gas_m3 = np.asarray(st.session_state["direct_GRV_gas_m3"], dtype=float)
-        elif grv_option == "Area × Thickness × GCF":
-            # Get from atgcf method split
-            if "atgcf_GRV_oil_m3" in st.session_state:
-                GRV_oil_m3 = np.asarray(st.session_state["atgcf_GRV_oil_m3"], dtype=float)
-            if "atgcf_GRV_gas_m3" in st.session_state:
-                GRV_gas_m3 = np.asarray(st.session_state["atgcf_GRV_gas_m3"], dtype=float)
-    
-    # Fallback: use f_oil if split GRV not available for Oil + Gas
-    if fluid_type == "Oil + Gas" and (GRV_oil_m3 is None or GRV_gas_m3 is None):
-        # Try to get f_oil from the appropriate method
-        f_oil_val = 0.5  # default
-        if grv_option == "Direct GRV" and "direct_f_oil" in st.session_state:
-            f_oil_val = float(st.session_state["direct_f_oil"])
-        elif grv_option == "Area × Thickness × GCF" and "atgcf_f_oil" in st.session_state:
-            f_oil_val = float(st.session_state["atgcf_f_oil"])
-        elif "f_oil" in st.session_state:
-            f_oil_val = float(st.session_state["f_oil"])
-        
-        if GRV_oil_m3 is None:
-            GRV_oil_m3 = grv * f_oil_val
-        if GRV_gas_m3 is None:
-            GRV_gas_m3 = grv * (1.0 - f_oil_val)
-    
-    # Get f_oil array - ensure we extract scalar value if f_oil is an array
-    f_oil_val = st.session_state.get("f_oil", 0.5)
-    if isinstance(f_oil_val, np.ndarray):
-        # If f_oil is an array, use its mean or first value
-        f_oil_val = float(np.mean(f_oil_val)) if len(f_oil_val) > 0 else 0.5
-    else:
-        f_oil_val = float(f_oil_val)
-    f_oil = np.full(num_trials, f_oil_val)
+    # Shared with compute.run_simulation and the Results page, so all three agree.
+    GRV_oil_m3, GRV_gas_m3 = resolve_grv_split(
+        fluid_type, grv, st.session_state, grv_option
+    )
+
     sCY = st.session_state.get("sCY", None)
     sRF_cond = st.session_state.get("sRF_cond", None)
     gas_scf_per_boe = st.session_state.get("gas_scf_per_boe", 6000.0)
 
     rf_oil, rf_gas, sRF_cond, rf_warnings = validate_rf_fractions(rf_oil, rf_gas, sRF_cond)
-    f_oil, frac_warnings = validate_fractions(f_oil)
-    all_warnings = rf_warnings + frac_warnings
-    if all_warnings:
-        warning_text = "⚠️ Parameter validation warnings:\n" + "\n".join(f"• {w}" for w in all_warnings)
+    if rf_warnings:
+        warning_text = "⚠️ Parameter validation warnings:\n" + "\n".join(f"• {w}" for w in rf_warnings)
         st.warning(warning_text)
 
-    sRF_assoc_gas = trial_data.get("RF_assoc", trial_data.get("RF_oil", rf_oil))
+    # trial_data has no "RF_assoc" key, so this previously always fell through to
+    # RF_oil and silently discarded the user's Associated Gas RF input.
+    sRF_assoc_gas = st.session_state.get("sRF_assoc_gas", rf_oil)
 
     # Sample/derive saturations
     from scopehc.compute import derive_saturation_samples
@@ -3344,7 +3293,6 @@ def collect_all_trial_data() -> Optional[Dict[str, List[float]]]:
         GRV_m3=grv,
         NtG=ntg,
         Por=porosity,
-        f_oil=f_oil,
         RF_oil=rf_oil,
         RF_gas=rf_gas,
         Bg_rb_per_scf=bg,
@@ -3363,8 +3311,8 @@ def collect_all_trial_data() -> Optional[Dict[str, List[float]]]:
     trial_data["Pore_Volume_Total_m3"] = res["PV_total_m3"].tolist()
     trial_data["Pore_Volume_Oil_m3"] = res["PV_oil_m3"].tolist()
     trial_data["Pore_Volume_Gas_m3"] = res["PV_gas_m3"].tolist()
-    trial_data["In_situ_Oil_Volume_m3"] = res["V_oil_insitu_m3"].tolist()
-    trial_data["In_situ_Gas_Volume_m3"] = res["V_gas_insitu_m3"].tolist()
+    trial_data["In_place_Oil_STB"] = res["STOIIP_STB"].tolist()
+    trial_data["In_place_Gas_scf"] = res["GIIP_scf"].tolist()
     trial_data["Recoverable_Oil_STB"] = res["Oil_STB_rec"].tolist()
     trial_data["Recoverable_Oil_MMSTB"] = (res["Oil_STB_rec"] / 1e6).tolist()
     trial_data["Recoverable_Oil_Mm3"] = (res["Oil_STB_rec"] * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6).tolist()
@@ -3385,8 +3333,11 @@ def collect_all_trial_data() -> Optional[Dict[str, List[float]]]:
     total_liquids_stb = res["Total_liquids_STB"]
     thr_boe = res["Total_surface_BOE"]
 
-    oip_stb = (res["V_oil_insitu_m3"] * RB_PER_M3) * invbo
-    gip_scf = (res["V_gas_insitu_m3"] * RB_PER_M3) / bg
+    # STOIIP_STB / GIIP_scf are ALREADY at surface conditions. The previous code
+    # multiplied by RB_PER_M3 and 1/Bo (or 1/Bg) a second time here, inflating the
+    # exported in-place volumes by ~4.7x for oil and ~1100x for gas.
+    oip_stb = res["STOIIP_STB"]
+    gip_scf = res["GIIP_scf"]
 
     trial_data["Recoverable_Condensate_STB"] = cond_rec_stb.tolist()
     trial_data["Recoverable_Condensate_MMSTB"] = (cond_rec_stb / 1e6).tolist()

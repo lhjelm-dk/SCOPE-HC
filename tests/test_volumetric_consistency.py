@@ -90,6 +90,26 @@ def test_assoc_gas_defaults_to_no_extra_reduction():
     assert res["Gas_assoc_scf_rec"][0] == pytest.approx(expected, rel=1e-9)
 
 
+def test_assoc_gas_applies_rf_oil_and_rf_assoc_by_design():
+    """
+    Both factors apply, deliberately: RF_oil enters via Oil_STB_rec because only
+    produced oil liberates its solution gas, and RF_assoc is a separate handling
+    efficiency on that gas. Confirmed with the author 2026-08-24.
+
+    This test exists so the apparent double-count is not "fixed" by mistake.
+    """
+    n = 1
+    rf_oil, rf_assoc, gor = 0.35, 0.55, 800.0
+    res = _base_case(n, RF_oil=np.full(n, rf_oil), RF_assoc=np.full(n, rf_assoc))
+
+    expected = res["STOIIP_STB"][0] * rf_oil * gor * rf_assoc
+    assert res["Gas_assoc_scf_rec"][0] == pytest.approx(expected, rel=1e-9)
+
+    # Explicitly NOT the single-factor form.
+    single_factor = res["STOIIP_STB"][0] * gor * rf_assoc
+    assert res["Gas_assoc_scf_rec"][0] != pytest.approx(single_factor, rel=1e-6)
+
+
 # --------------------------------------------------------------------------
 # Condensate comes from free gas only
 # --------------------------------------------------------------------------

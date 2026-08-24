@@ -236,6 +236,18 @@ def compute_results(
     # Calculate recoverable volumes (using hydrocarbon-saturated pore volumes)
     Oil_STB_rec = (PV_oil_hc_m3 * RB_PER_M3) * InvBo_STB_per_rb * RF_oil
     Gas_free_scf_rec = safe_div((PV_gas_hc_m3 * RB_PER_M3) * RF_gas, Bg_rb_per_scf)
+    # ASSOCIATED GAS - TWO FACTORS APPLY, AND THAT IS DELIBERATE.
+    #
+    #   Gas_assoc = Oil_STB_rec * GOR * RF_assoc
+    #             = STOIIP * RF_oil * GOR * RF_assoc
+    #
+    # RF_oil enters through Oil_STB_rec because only oil that is actually
+    # produced liberates its solution gas at surface. RF_assoc is then a
+    # SEPARATE handling/processing efficiency on that liberated gas - it is not
+    # a second recovery factor on the same volume, and the apparent
+    # double-counting is intended. Confirmed with the author, 2026-08-24.
+    #
+    # Do not "simplify" this to STOIIP * GOR * RF_assoc.
     assoc_factor = np.ones_like(Oil_STB_rec)
     if RF_assoc is not None:
         assoc_factor = clip01(np.asarray(RF_assoc, dtype=float))

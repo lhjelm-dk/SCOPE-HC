@@ -5,6 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from scopehc.compute import compute_results
+
 from .common import (
     UNIT_CONVERSIONS,
     collect_all_trial_data,
@@ -272,26 +274,76 @@ def _create_tornado_plot(unit_system: str, target_volume: str, gas_scf_per_boe: 
     bg_mean = float(np.mean(sBg))
     gor_mean = float(np.mean(sGOR))
 
-    PV_total_base = (grv_mean * 1e6) * ntg_mean * porosity_mean
-    PV_oil_base = PV_total_base * f_oil_mean
-    PV_gas_base = PV_total_base * (1 - f_oil_mean)
-    # Apply saturation
-    PV_oil_hc_base = PV_oil_base * shc_oil_mean
-    PV_gas_hc_base = PV_gas_base * shc_gas_mean
-
-    base_oil_m3 = PV_oil_hc_base * rf_oil_mean * invbo_mean
-    base_gas_m3 = (PV_gas_hc_base * rf_gas_mean) / bg_mean
-    base_assoc_m3 = base_oil_m3 * gor_mean
-
     cy_mean = float(np.mean(sCY)) if sCY is not None else None
     rf_cond_mean = float(np.mean(sRF_cond)) if sRF_cond is not None else None
-    if cy_mean is not None and rf_cond_mean is not None:
-        base_cond_m3 = base_gas_m3 * cy_mean * rf_cond_mean
-    else:
-        base_cond_m3 = 0.0
+    sRF_assoc = st.session_state.get("sRF_assoc_gas", None)
+    rf_assoc_mean = float(np.mean(sRF_assoc)) if sRF_assoc is not None else None
 
-    # CRITICAL: Use actual simulation results for base case if available
-    # This ensures consistency with Results page
+    def calculate_volume(
+        grv_val, ntg_val, porosity_val, rf_oil_val, rf_gas_val, invbo_val,
+        bg_val, gor_val, shc_oil_val=None, shc_gas_val=None,
+    ):
+        """
+        Evaluate the volumetric model for one deterministic set of inputs.
+
+        Delegates to compute_results so the tornado cannot drift from the
+        Results page. This module previously reimplemented the volumetrics and
+        omitted the m³→reservoir-barrel factor on the gas path, so every gas and
+        associated-gas figure came out 5.6146x (m3_to_scf / RB_PER_M3) too large,
+        which distorted THR rankings.
+
+        grv_val is in 10^6 m³; the returned tuple is in display units.
+        """
+        def _one(v):
+            return np.array([float(v)], dtype=float)
+
+        grv_total = _one(grv_val * 1e6)
+        shc_oil_use = shc_oil_mean if shc_oil_val is None else shc_oil_val
+        shc_gas_use = shc_gas_mean if shc_gas_val is None else shc_gas_val
+
+        r = compute_results(
+            GRV_m3=grv_total,
+            NtG=_one(ntg_val),
+            Por=_one(porosity_val),
+            RF_oil=_one(rf_oil_val),
+            RF_gas=_one(rf_gas_val),
+            Bg_rb_per_scf=_one(bg_val),
+            InvBo_STB_per_rb=_one(invbo_val),
+            GOR_scf_per_STB=_one(gor_val),
+            CY_STB_per_MMscf=None if cy_mean is None else _one(cy_mean),
+            RF_cond=None if rf_cond_mean is None else _one(rf_cond_mean),
+            RF_assoc=None if rf_assoc_mean is None else _one(rf_assoc_mean),
+            gas_scf_per_boe=gas_scf_per_boe,
+            GRV_oil_m3=grv_total * f_oil_mean,
+            GRV_gas_m3=grv_total * (1.0 - f_oil_mean),
+            Shc_oil=_one(shc_oil_use),
+            Shc_gas=_one(shc_gas_use),
+        )
+
+        oil_stb = float(r["Oil_STB_rec"][0])
+        gas_scf = float(r["Gas_free_scf_rec"][0])
+        assoc_scf = float(r["Gas_assoc_scf_rec"][0])
+        cond_stb = float(r["Cond_STB_rec"][0])
+        thr_boe = float(r["Total_surface_BOE"][0])
+
+        if unit_system == "oilfield":
+            return (
+                oil_stb / 1e6,      # MMSTB
+                gas_scf / 1e9,      # Bscf
+                assoc_scf / 1e9,    # Bscf
+                cond_stb / 1e6,     # MMSTB
+                thr_boe / 1e6,      # MMBOE
+            )
+        return (
+            oil_stb * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6,
+            gas_scf * UNIT_CONVERSIONS["scf_to_m3"] / 1e9,
+            assoc_scf * UNIT_CONVERSIONS["scf_to_m3"] / 1e9,
+            cond_stb * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6,
+            thr_boe * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6,
+        )
+
+    # Prefer the actual simulation results for the base case so the tornado's
+    # centre matches the Results page exactly.
     if results is not None:
         # Get actual mean values from simulation results
         Oil_STB_rec = np.asarray(results.get("Oil_STB_rec", np.array([0])), dtype=float)
@@ -321,25 +373,11 @@ def _create_tornado_plot(unit_system: str, target_volume: str, gas_scf_per_boe: 
             base_cond = base_cond_stb_mean * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6  # Mm³
             base_thr = base_thr_boe_mean * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6  # Mm³ BOE
     else:
-        # Fallback: recalculate from mean inputs (less accurate, but works if results not available)
-        base_oil_stb = base_oil_m3 * UNIT_CONVERSIONS["m3_to_bbl"]
-        base_gas_scf = base_gas_m3 * UNIT_CONVERSIONS["m3_to_scf"]
-        base_assoc_scf = base_assoc_m3 * UNIT_CONVERSIONS["m3_to_scf"]
-        base_cond_stb = base_cond_m3 * UNIT_CONVERSIONS["m3_to_bbl"]
-        base_thr_boe = base_oil_stb + base_cond_stb + (base_gas_scf + base_assoc_scf) / gas_scf_per_boe
-
-        if unit_system == "oilfield":
-            base_oil = base_oil_m3 * UNIT_CONVERSIONS["m3_to_bbl"] / 1e6
-            base_gas = base_gas_m3 * UNIT_CONVERSIONS["m3_to_scf"] / 1e9
-            base_assoc = base_assoc_m3 * UNIT_CONVERSIONS["m3_to_scf"] / 1e9
-            base_cond = base_cond_m3 * UNIT_CONVERSIONS["m3_to_bbl"] / 1e6
-            base_thr = base_thr_boe / 1e6
-        else:
-            base_oil = base_oil_m3 / 1e6
-            base_gas = base_gas_m3 / 1e9
-            base_assoc = base_assoc_m3 / 1e9
-            base_cond = base_cond_m3 / 1e6
-            base_thr = base_thr_boe * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
+        # No cached results: evaluate the same model at mean inputs.
+        base_oil, base_gas, base_assoc, base_cond, base_thr = calculate_volume(
+            grv_mean, ntg_mean, porosity_mean, rf_oil_mean, rf_gas_mean,
+            invbo_mean, bg_mean, gor_mean,
+        )
 
     if target_volume == "Oil":
         base_value = base_oil
@@ -353,57 +391,6 @@ def _create_tornado_plot(unit_system: str, target_volume: str, gas_scf_per_boe: 
         base_value = base_thr
     else:
         base_value = base_oil
-
-    def calculate_volume(grv_val, ntg_val, porosity_val, rf_oil_val, rf_gas_val, invbo_val, bg_val, gor_val, shc_oil_val=None, shc_gas_val=None):
-        PV_total = (grv_val * 1e6) * ntg_val * porosity_val
-        PV_oil = PV_total * f_oil_mean
-        PV_gas = PV_total * (1 - f_oil_mean)
-        
-        # Apply saturation
-        shc_oil_use = shc_oil_val if shc_oil_val is not None else shc_oil_mean
-        shc_gas_use = shc_gas_val if shc_gas_val is not None else shc_gas_mean
-        PV_oil_hc = PV_oil * shc_oil_use
-        PV_gas_hc = PV_gas * shc_gas_use
-
-        oil_m3 = PV_oil_hc * rf_oil_val * invbo_val
-        gas_m3 = (PV_gas_hc * rf_gas_val) / bg_val
-        assoc_m3 = oil_m3 * gor_val
-
-        # CRITICAL: Condensate calculation must match compute.py formula exactly
-        # From compute.py line 261: Cond_STB_rec = Gas_free_scf_rec * (CY_STB_per_MMscf / 1_000_000.0) * RF_cond
-        # Condensate = (Free Gas in scf) × (CY in STB/MMscf / 1,000,000) × RF_cond
-        # Then convert STB to m³ for consistency with other volumes
-        if cy_mean is not None and rf_cond_mean is not None:
-            # Convert gas_m3 to scf first (this is Gas_free_scf_rec equivalent)
-            gas_scf_for_cond = gas_m3 * UNIT_CONVERSIONS["m3_to_scf"]
-            # Calculate condensate in STB: gas_scf × (CY / 1e6) × RF_cond
-            # This matches: Cond_STB_rec = Gas_free_scf_rec * (CY_STB_per_MMscf / 1_000_000.0) * RF_cond
-            cond_stb = gas_scf_for_cond * (cy_mean / 1_000_000.0) * rf_cond_mean
-            # Convert STB to m³ for consistency
-            cond_m3 = cond_stb * UNIT_CONVERSIONS["bbl_to_m3"]
-        else:
-            cond_stb = 0.0
-            cond_m3 = 0.0
-
-        oil_stb = oil_m3 * UNIT_CONVERSIONS["m3_to_bbl"]
-        gas_scf = gas_m3 * UNIT_CONVERSIONS["m3_to_scf"]
-        assoc_scf = assoc_m3 * UNIT_CONVERSIONS["m3_to_scf"]
-        thr_boe = oil_stb + cond_stb + (gas_scf + assoc_scf) / gas_scf_per_boe
-
-        if unit_system == "oilfield":
-            oil_vol = oil_m3 * UNIT_CONVERSIONS["m3_to_bbl"] / 1e6
-            gas_vol = gas_m3 * UNIT_CONVERSIONS["m3_to_scf"] / 1e9
-            assoc_vol = assoc_m3 * UNIT_CONVERSIONS["m3_to_scf"] / 1e9
-            cond_vol = cond_m3 * UNIT_CONVERSIONS["m3_to_bbl"] / 1e6
-            thr_vol = thr_boe / 1e6
-        else:
-            oil_vol = oil_m3 / 1e6
-            gas_vol = gas_m3 / 1e9
-            assoc_vol = assoc_m3 / 1e9
-            cond_vol = cond_m3 / 1e6
-            thr_vol = thr_boe * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
-
-        return oil_vol, gas_vol, assoc_vol, cond_vol, thr_vol
 
     sensitivities: list[dict[str, float]] = []
     debug_info: list[str] = []

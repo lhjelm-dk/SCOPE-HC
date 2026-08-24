@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 matches runtime.txt (what Streamlit Cloud uses).
+        python-version: ['3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Byte-compile every source file
+        run: python -m compileall -q scopehc _pages_disabled streamlit_app.py
+
+      - name: Import every module
+        # Catches broken module-level code that syntax checks miss. This is the
+        # cheapest guard against shipping an app that crashes on first render.
+        run: |
+          python - <<'PY'
+          import importlib, sys
+
+          mods = [
+              "scopehc.config", "scopehc.utils", "scopehc.pvt", "scopehc.geom",
+              "scopehc.geom_depth", "scopehc.sampling", "scopehc.compute",
+              "scopehc.plots", "scopehc.export",
+              "scopehc.ui.common", "scopehc.ui.helpers", "scopehc.ui.inputs",
+              "scopehc.ui.inputs_grv", "scopehc.ui.inputs_reservoir",
+              "scopehc.ui.inputs_fluids", "scopehc.ui.inputs_dependencies",
+              "scopehc.ui.input_qc", "scopehc.ui.run", "scopehc.ui.results",
+              "scopehc.ui.sensitivity", "scopehc.ui.downloads",
+              "scopehc.ui.help_math",
+          ]
+          failed = []
+          for m in mods:
+              try:
+                  importlib.import_module(m)
+              except Exception as exc:
+                  failed.append(f"{m}: {type(exc).__name__}: {exc}")
+          if failed:
+              print("FAILED IMPORTS:", *failed, sep="\n  ")
+              sys.exit(1)
+          print(f"All {len(mods)} modules imported cleanly.")
+          PY
+
+      - name: Run tests
+        run: pytest
+
+      - name: Verify data files the app needs at runtime are present
+        run: |
+          test -f data/gcf_table.csv || { echo "MISSING data/gcf_table.csv"; exit 1; }
+          echo "Runtime data files present."

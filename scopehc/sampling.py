@@ -337,31 +337,63 @@ def correlated_samples(rng, params_cfg, corr_matrix, param_names, n):
     return samples
 
 
-def _nearest_correlation_matrix(A, tol=1e-12, max_iter=100):
+def _force_psd(M, floor=1e-10):
+    """
+    Clip eigenvalues at a positive floor and renormalise to a unit diagonal.
+
+    Rescaling by D^-1/2 M D^-1/2 preserves positive definiteness, so this guarantees a matrix
+    Cholesky can factor. It is not the *nearest* correlation matrix -- that is Higham's job --
+    which is why it runs only as a final safety net after the projection.
+    """
+    eigval, eigvec = np.linalg.eigh(0.5 * (M + M.T))
+    out = (eigvec * np.clip(eigval, floor, None)) @ eigvec.T
+    scale = np.sqrt(np.diag(out))
+    out = out / np.outer(scale, scale)
+    out = 0.5 * (out + out.T)
+    np.fill_diagonal(out, 1.0)
+    return out
+
+
+def _nearest_correlation_matrix(A, tol=1e-10, max_iter=200):
     """
     Higham (2002) nearest correlation matrix projection.
+
+    Three fixes over the previous implementation, which did not converge and could return an
+    indefinite matrix that validate_dependency_matrix then reported as valid -- so an inconsistent
+    elicitation was accepted at the input screen and raised LinAlgError later, inside
+    correlated_samples. On A-B 0.9, B-C 0.9, A-C -0.9 it returned a matrix whose smallest
+    eigenvalue was still -0.267.
+
+    1. The Dykstra correction is taken from the PSD projection *alone*. Computing it after the
+       unit-diagonal fill made it absorb both projections, which is what broke convergence.
+    2. Convergence is tested on the change in the actual iterate, relative to its scale, rather
+       than on the correction term against an absolute tolerance.
+    3. Only the off-diagonal is clipped to +/-0.999, and _force_psd runs afterwards. Clipping the
+       whole matrix at the end could reintroduce indefiniteness into a matrix just repaired.
     """
     X = np.array(A, dtype=float, copy=True)
     X = 0.5 * (X + X.T)
     np.fill_diagonal(X, 1.0)
     Y = X.copy()
     Delta_S = np.zeros_like(X)
+    previous = Y.copy()
 
     for _ in range(max_iter):
         R = Y - Delta_S
         eigval, eigvec = np.linalg.eigh(R)
-        eigval = np.clip(eigval, 0.0, None)
-        X = (eigvec * eigval) @ eigvec.T
-        X = 0.5 * (X + X.T)
-        np.fill_diagonal(X, 1.0)
-        Delta_S = X - R
-        Y = X.copy()
-        if np.linalg.norm(X - R, ord='fro') <= tol:
+        psd = (eigvec * np.clip(eigval, 0.0, None)) @ eigvec.T
+        psd = 0.5 * (psd + psd.T)
+        Delta_S = psd - R
+        Y = psd.copy()
+        np.fill_diagonal(Y, 1.0)
+        scale = max(1.0, np.linalg.norm(Y, ord='fro'))
+        if np.linalg.norm(Y - previous, ord='fro') <= tol * scale:
             break
+        previous = Y.copy()
 
-    X = np.clip(X, -0.999, 0.999)
-    np.fill_diagonal(X, 1.0)
-    return X
+    off = ~np.eye(Y.shape[0], dtype=bool)
+    Y[off] = np.clip(Y[off], -0.999, 0.999)
+    return _force_psd(Y)
 
 
 def validate_dependency_matrix(dep_matrix: np.ndarray, param_names: List[str]) -> Tuple[bool, str]:
@@ -396,10 +428,9 @@ def fix_correlation_matrix(corr_matrix: np.ndarray) -> np.ndarray:
     """
     Project a matrix to the nearest correlation matrix.
     """
-    fixed = _nearest_correlation_matrix(corr_matrix)
-    fixed = np.clip(fixed, -0.999, 0.999)
-    np.fill_diagonal(fixed, 1.0)
-    return fixed
+    # No clip here on purpose. _nearest_correlation_matrix already bounds the off-diagonal and
+    # then forces positive definiteness; clipping afterwards is what could undo the repair.
+    return _nearest_correlation_matrix(corr_matrix)
 
 
 def apply_correlation(x: np.ndarray, y: np.ndarray, correlation: float) -> Tuple[np.ndarray, np.ndarray]:

@@ -930,7 +930,7 @@ def render_custom_navigation() -> None:
                 if st.button(
                     display_title,
                     key=f"nav_{item['page']}",
-                    use_container_width=True,
+                    width="stretch",
                     type="primary" if is_active else "secondary",
                 ):
                     st.session_state["_nav_target"] = item['page']
@@ -940,7 +940,7 @@ def render_custom_navigation() -> None:
             if st.sidebar.button(
                 display_title,
                 key=f"nav_{item['page']}",
-                use_container_width=True,
+                width="stretch",
                 type="primary" if is_active else "secondary",
             ):
                 st.session_state["_nav_target"] = item['page']
@@ -1526,7 +1526,7 @@ def create_dependency_matrix_ui_with_scatter_plots(
                         yaxis_title=p2,
                         height=300,
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
 
     return dep_matrix, dependencies
 
@@ -3168,9 +3168,9 @@ def render_param(
     unit_lbl = plot_unit_label if plot_unit_label else unit_hint
     st.plotly_chart(
         make_hist_cdf_figure(display_samples, f"{label} distribution", f"{label} ({unit_lbl})", "input"),
-        use_container_width=True,
+        width="stretch",
     )
-    st.dataframe(summary_table(display_samples, decimals=stats_decimals), use_container_width=True)
+    st.dataframe(summary_table(display_samples, decimals=stats_decimals), width="stretch")
 
     return samples
 
@@ -3627,7 +3627,7 @@ def render_run_controls_and_diagnostics(input_dict: dict):
     
     col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("Run Monte Carlo Simulation", type="primary", key="btn_run_sim", use_container_width=True):
+        if st.button("Run Monte Carlo Simulation", type="primary", key="btn_run_sim", width="stretch"):
             st.session_state["run_id"] = run_id + 1
             st.session_state["last_input_hash"] = current_hash
             st.session_state["last_run_ts"] = time.strftime("%Y-%m-%d %H:%M:%S")

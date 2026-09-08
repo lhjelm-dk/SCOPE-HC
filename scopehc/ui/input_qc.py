@@ -180,7 +180,7 @@ def render_input_qc_panel() -> Dict[str, Any]:
             "Random Seed": str(st.session_state.get("random_seed", 42)),
             "Percentile Convention": "P10 high (exceedance)" if st.session_state.get("percentile_exceedance", True) else "P10 low (non-exceedance)",
         }
-        st.dataframe(pd.DataFrame(list(settings_data.items()), columns=["Setting", "Value"]), use_container_width=True)
+        st.dataframe(pd.DataFrame(list(settings_data.items()), columns=["Setting", "Value"]), width="stretch")
     
     # Warnings and Errors
     if qc_status["warnings"]:
@@ -227,7 +227,7 @@ def _render_parameter_table(title: str, params: List[Tuple[str, str, str, float,
     
     if rows:
         df = pd.DataFrame(rows)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
     else:
         st.info(f"No data available for {title}")
 

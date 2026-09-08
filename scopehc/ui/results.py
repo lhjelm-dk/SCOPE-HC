@@ -229,7 +229,7 @@ def render() -> None:
     for title, arr, unit, decimals in insitu_results:
         st.plotly_chart(
             make_hist_cdf_figure(arr, title, f"{title} ({unit})", "result"),
-            use_container_width=True,
+            width="stretch",
         )
         # Get convention-aware interpretation
         use_exceedance = st.session_state.get("percentile_exceedance", True)
@@ -239,7 +239,7 @@ def render() -> None:
             interp_text = "_Interpretation:_ P10/P50/P90 use non-exceedance convention (P10=conservative, P90=optimistic). "
         interp_text += "Wider histograms indicate larger uncertainty from GRV and petrophysical spread."
         st.caption(interp_text)
-        st.dataframe(summary_table(arr, decimals=decimals), use_container_width=True)
+        st.dataframe(summary_table(arr, decimals=decimals), width="stretch")
 
     st.markdown("---")
     st.markdown("## Recoverable Volumes")
@@ -254,7 +254,7 @@ def render() -> None:
     for title, arr, unit, decimals in recoverable_results:
         st.plotly_chart(
             make_hist_cdf_figure(arr, title, f"{title} ({unit})", "result"),
-            use_container_width=True,
+            width="stretch",
         )
         # Get convention-aware interpretation
         use_exceedance = st.session_state.get("percentile_exceedance", True)
@@ -264,7 +264,7 @@ def render() -> None:
             interp_text = "_Interpretation:_ P10/P50/P90 use non-exceedance convention (P10=conservative, P90=optimistic). "
         interp_text += "Wider histograms indicate larger uncertainty from GRV and petrophysical spread. CDF shows cumulative probability."
         st.caption(interp_text)
-        st.dataframe(summary_table(arr, decimals=decimals), use_container_width=True)
+        st.dataframe(summary_table(arr, decimals=decimals), width="stretch")
 
     st.markdown("---")
     st.markdown("## Recoverable (Surface) Volumes")
@@ -397,7 +397,7 @@ def render() -> None:
             }
         ])
         
-        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+        st.dataframe(styled_df, width="stretch", hide_index=True)
 
     st.markdown("---")
     st.markdown("## Total Hydrocarbon Resource (THR)")
@@ -482,7 +482,7 @@ def render() -> None:
             }
         ])
         
-        st.dataframe(styled_thr_df, use_container_width=True, hide_index=True)
+        st.dataframe(styled_thr_df, width="stretch", hide_index=True)
 
     st.markdown("**THR Composition (mean):**")
     mean_oil_boe = np.mean(Oil_BOE) / 1e6
@@ -515,7 +515,7 @@ def render() -> None:
                 ],
             }
         )
-        st.dataframe(composition, use_container_width=True, hide_index=True)
+        st.dataframe(composition, width="stretch", hide_index=True)
 
     st.markdown("### Hydrocarbon Volume Distribution Analysis (BOE)")
     if unit_system == "oilfield":
@@ -579,7 +579,7 @@ def render() -> None:
         height=500,
         showlegend=True,
     )
-    st.plotly_chart(fig_violin, use_container_width=True)
+    st.plotly_chart(fig_violin, width="stretch")
     st.caption(
         f"All volumes are shown in BOE units for direct comparison. "
         f"Gas conversion: {gas_scf_per_boe:,.0f} scf/BOE"
@@ -603,7 +603,7 @@ def render() -> None:
                     annotation_text=f"{label}: {value:.1f} {thr_unit}",
                     annotation_position="top",
                 )
-        st.plotly_chart(fig_thr, use_container_width=True)
+        st.plotly_chart(fig_thr, width="stretch")
         # Get convention-aware interpretation
         use_exceedance = st.session_state.get("percentile_exceedance", True)
         if use_exceedance:
@@ -614,7 +614,7 @@ def render() -> None:
             interp_text += "P10/P50/P90 use non-exceedance convention (P10=conservative, P90=optimistic). "
         interp_text += "Wider distributions indicate greater uncertainty in volume estimates."
         st.caption(interp_text)
-        st.dataframe(summary_table(thr_display, decimals=2), use_container_width=True)
+        st.dataframe(summary_table(thr_display, decimals=2), width="stretch")
         st.caption(
             f"THR includes Oil + Condensate + Gas/BOE. Default 6.0 Mscf/BOE; configurable per company standard. "
             f"Current factor: {gas_scf_per_boe:,.0f} scf/BOE"
@@ -668,7 +668,7 @@ def render() -> None:
             ],
         }
         summary_df = pd.DataFrame(summary_data)
-        st.dataframe(summary_df, use_container_width=True, hide_index=True)
+        st.dataframe(summary_df, width="stretch", hide_index=True)
 
     st.markdown("---")
     _render_column_distributions_overlay()
@@ -705,7 +705,7 @@ def _render_column_distributions_overlay() -> None:
     fig.update_layout(barmode="overlay", height=420, margin=dict(l=40, r=30, t=30, b=60))
     fig.update_xaxes(title_text="Column Height (m)")
     fig.update_yaxes(title_text="Frequency")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def _render_saturation_summary() -> None:
@@ -737,7 +737,7 @@ def _hist(name: str, arr, title: str) -> None:
     fig.update_layout(height=300, margin=dict(l=30, r=20, t=30, b=40))
     fig.update_xaxes(title_text=title)
     fig.update_yaxes(title_text="Frequency")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def render_saturation_plots() -> None:

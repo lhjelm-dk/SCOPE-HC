@@ -102,7 +102,7 @@ def _render_violin_plots(
         height=500,
         showlegend=True,
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.caption(
         f"All volumes are shown in BOE units for direct comparison. "
         f"Gas conversion: {gas_scf_per_boe:,.0f} scf/BOE"
@@ -149,7 +149,7 @@ def _render_thr_breakdown(
                 ],
             }
         )
-        st.dataframe(composition_data, use_container_width=True, hide_index=True)
+        st.dataframe(composition_data, width="stretch", hide_index=True)
 
     st.markdown("#### THR Breakdown by Fluid Type (BOE)")
     if unit_system == "oilfield":
@@ -204,7 +204,7 @@ def _render_thr_breakdown(
             ],
         }
     )
-    st.dataframe(summary_df, use_container_width=True, hide_index=True)
+    st.dataframe(summary_df, width="stretch", hide_index=True)
 
 
 def _create_tornado_plot(unit_system: str, target_volume: str, gas_scf_per_boe: float, results: dict = None):
@@ -778,7 +778,7 @@ def _render_sensitivity_summary(
 
     if rows:
         df = pd.DataFrame(rows)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
     else:
         st.caption("No significant sensitivities for the selected volume.")
 
@@ -848,12 +848,12 @@ def render() -> None:
                     annotation_text=f"{label}: {value:.1f} {thr_unit}",
                     annotation_position="top",
                 )
-        st.plotly_chart(fig_thr, use_container_width=True)
+        st.plotly_chart(fig_thr, width="stretch")
         st.caption(
             "_Interpretation:_ THR represents total recoverable volumes converted to oil equivalent. "
             "Wider distributions indicate greater uncertainty."
         )
-        st.dataframe(summary_table(thr_display, decimals=2), use_container_width=True)
+        st.dataframe(summary_table(thr_display, decimals=2), width="stretch")
         st.caption(
             f"THR includes Oil + Condensate + Gas/BOE. Default 6.0 Mscf/BOE; company standards may vary. "
             f"Current factor: {gas_scf_per_boe:,.0f} scf/BOE"
@@ -886,6 +886,6 @@ def render() -> None:
             "⚠️ Base case recoverable volume is zero. Check input parameters for realism before relying on the sensitivity plot."
         )
 
-    st.plotly_chart(tornado_fig, use_container_width=True)
+    st.plotly_chart(tornado_fig, width="stretch")
     _render_sensitivity_summary(sensitivities, base_value, target_volume, unit_system)
 

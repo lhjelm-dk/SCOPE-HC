@@ -255,7 +255,7 @@ def render_fluid_estimator() -> None:
             },
         ])
         
-        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+        st.dataframe(styled_df, width="stretch", hide_index=True)
 
         st.info(
             f"**Typical North Sea oil** (~38°API, 90 °C, 220 bar): "

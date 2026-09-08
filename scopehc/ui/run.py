@@ -309,7 +309,7 @@ def render() -> None:
             
             if summary_rows:
                 df_summary = pd.DataFrame(summary_rows)
-                st.dataframe(df_summary, use_container_width=True, hide_index=True)
+                st.dataframe(df_summary, width="stretch", hide_index=True)
             else:
                 st.info("No input parameters available for summary.")
             

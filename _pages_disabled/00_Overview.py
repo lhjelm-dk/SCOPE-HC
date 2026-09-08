@@ -135,7 +135,7 @@ def main() -> None:
                 ("RES", "SENS"),
             ]
         )
-        st.graphviz_chart(dot, use_container_width=True)
+        st.graphviz_chart(dot, width="stretch")
     except (ImportError, Exception):
         # Fallback to Plotly for cloud deployments where graphviz binary is not available
         import plotly.graph_objects as go
@@ -237,7 +237,7 @@ def main() -> None:
             showlegend=False,
         )
         
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
 
     with st.expander("Assumptions and formulas", expanded=False):
         st.markdown(

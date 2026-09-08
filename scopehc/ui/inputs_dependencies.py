@@ -482,7 +482,7 @@ def _render_correlation_cross_plots(
             template="plotly_white",
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         
         # Display regression statistics
         col1, col2 = st.columns(2)

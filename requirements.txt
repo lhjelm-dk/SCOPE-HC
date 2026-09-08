@@ -1,7 +1,9 @@
 # Runtime dependencies for SCOPE-HC.
 # Upper bounds block breaking major releases from reaching the live Streamlit
 # Cloud app without a commit. Verified working with the versions in comments.
-streamlit>=1.38,<2.0      # 1.38.0
+# 1.56 is the floor because `st.iframe` first appears there; it replaces
+# `st.components.v1.html`, whose stated removal date has already passed.
+streamlit>=1.56,<2.0      # 1.61.1
 numpy>=1.20,<3.0          # 2.3.4
 pandas>=1.3,<3.0          # 2.3.3
 plotly>=5.0,<7.0          # 6.6.0

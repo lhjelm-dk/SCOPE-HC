@@ -24,6 +24,12 @@ from scopehc.config import (
     DEFAULTS,
     PALETTE,
 )
+#: The page the app opens on. Named here rather than typed at each use: the navigation and
+#: the router in `streamlit_app.py` both need it, they disagreed about it, and the symptom
+#: was silent -- on first load no nav button matched `current_page` and the active page went
+#: unhighlighted until the user clicked something.
+DEFAULT_PAGE = "_pages_disabled/00_Overview.py"
+
 from scopehc.utils import (
     invBg_to_Bg_rb_per_scf,
     clip01,
@@ -131,6 +137,7 @@ __all__ = [
     "export_to_csv",
     "export_to_excel",
     "render_disclaimer",
+    "DEFAULT_PAGE",
     "DEFAULTS",
     "HELP",
     "PARAM_COLORS",
@@ -176,71 +183,6 @@ def init_theme() -> None:
     global _THEME_INITIALIZED
     if _THEME_INITIALIZED:
         return
-
-    # Inject hiding code via components.html for later execution (runs after page render)
-    try:
-        import streamlit.components.v1 as components
-        components.html("""
-        <script>
-        (function() {
-            function forceHideNav() {
-                // Find and remove/hide Streamlit's navigation - very aggressive
-                const selectors = [
-                    '[data-testid="stSidebarNav"]',
-                    'nav[data-testid="stSidebarNav"]',
-                    'div[data-testid="stSidebarNav"]',
-                    'section[data-testid="stSidebarNav"]'
-                ];
-                
-                selectors.forEach(sel => {
-                    try {
-                        const els = document.querySelectorAll(sel);
-                        els.forEach(el => {
-                            const text = (el.textContent || '').toLowerCase();
-                            if (text.includes('streamlit app') || text.includes('overview') || text.includes('inputs') || el.querySelector('a[href*="pages/"]')) {
-                                if (!el.closest('.custom-nav-item')) {
-                                    try {
-                                        el.remove();
-                                    } catch(e) {
-                                        el.style.cssText = 'display:none!important;visibility:hidden!important;height:0!important;width:0!important;opacity:0!important;position:absolute!important;left:-9999px!important;z-index:-9999!important;';
-                                    }
-                                }
-                            }
-                        });
-                    } catch(e) {}
-                });
-                
-                // Also check sidebar for any page links that aren't in buttons
-                const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                if (sidebar) {
-                    const pageLinks = sidebar.querySelectorAll('a[href*="pages/"]');
-                    pageLinks.forEach(link => {
-                        if (!link.closest('button') && !link.closest('.custom-nav-item')) {
-                            const container = link.closest('nav, div, section, ul, li');
-                            if (container && container !== sidebar) {
-                                try {
-                                    container.remove();
-                                } catch(e) {
-                                    container.style.cssText = 'display:none!important;visibility:hidden!important;height:0!important;width:0!important;';
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-            
-            forceHideNav();
-            setInterval(forceHideNav, 25);  // Check every 25ms
-            const obs = new MutationObserver(forceHideNav);
-            obs.observe(document.body, {childList: true, subtree: true, attributes: true});
-            
-            // Also on any click
-            document.addEventListener('click', forceHideNav, true);
-        })();
-        </script>
-        """, height=0)
-    except Exception:
-        pass
 
     plt.style.use("seaborn-v0_8-colorblind")
 
@@ -337,6 +279,36 @@ def init_theme() -> None:
 
         .stButton>button[data-testid*="recalc"] {{
             color: white !important;
+        }}
+
+        /* The navigation carries the active page in Streamlit's own primary/secondary button
+           kind. The blanket gradient above is `!important` and overrides both, so every nav
+           button rendered the same red and the highlight was invisible -- the reason it looked
+           like the sidebar had "gone red". Scoped by the `nav_` widget key, which Streamlit
+           emits as a class on the element container, so nothing else in the app is touched. */
+        [class*="st-key-nav_"] .stButton>button {{
+            background: {bg_light} !important;
+            background-image: none !important;
+            color: {text_primary} !important;
+            border: 1px solid {border} !important;
+            box-shadow: none !important;
+            font-weight: 500 !important;
+        }}
+
+        [class*="st-key-nav_"] .stButton>button:hover {{
+            background: {bg_light} !important;
+            background-image: none !important;
+            border-color: {accent} !important;
+            transform: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }}
+
+        [class*="st-key-nav_"] .stButton>button[data-testid="stBaseButton-primary"] {{
+            background: {accent} !important;
+            background-image: none !important;
+            color: white !important;
+            border-color: {accent} !important;
+            font-weight: 600 !important;
         }}
 
         .stSlider>div>div>div>div {{
@@ -544,213 +516,6 @@ def init_theme() -> None:
             content: none !important;
         }}
         </style>
-        <script>
-        // Force hide Streamlit's automatic navigation - multiple strategies
-        // Run this function as early as possible
-        (function() {{
-            'use strict';
-            function hideAutoNav() {{
-            // Try multiple selectors - be very aggressive
-            const selectors = [
-                '[data-testid="stSidebarNav"]',
-                'nav[data-testid="stSidebarNav"]',
-                'div[data-testid="stSidebarNav"]',
-                'section[data-testid="stSidebarNav"]',
-                '[class*="stSidebarNav"]',
-                '[class*="sidebar-nav"]',
-                'nav[class*="css"]',  // Streamlit often uses CSS classes
-                '[role="navigation"]'
-            ];
-            
-            selectors.forEach(selector => {{
-                try {{
-                    const elements = document.querySelectorAll(selector);
-                    elements.forEach(el => {{
-                        // First check if it's Streamlit's nav by looking for specific content
-                        const text = (el.textContent || '').toLowerCase();
-                        const isStreamlitNav = text.includes('streamlit app') || 
-                                             text.includes('overview') || 
-                                             text.includes('inputs') ||
-                                             el.querySelector('a[href*="pages/"]');
-                        
-                        // Only hide if it's Streamlit's nav, not our custom nav
-                        if (isStreamlitNav && !el.closest('.custom-nav-item')) {{
-                            // Try to remove from DOM entirely first
-                            try {{
-                                if (el.parentNode) {{
-                                    el.parentNode.removeChild(el);
-                                    return;  // Successfully removed
-                                }}
-                            }} catch (e) {{
-                                // If removal fails, hide it aggressively
-                            }}
-                            
-                            // Aggressive hiding
-                            el.style.setProperty('display', 'none', 'important');
-                            el.style.setProperty('visibility', 'hidden', 'important');
-                            el.style.setProperty('height', '0', 'important');
-                            el.style.setProperty('width', '0', 'important');
-                            el.style.setProperty('max-height', '0', 'important');
-                            el.style.setProperty('max-width', '0', 'important');
-                            el.style.setProperty('overflow', 'hidden', 'important');
-                            el.style.setProperty('margin', '0', 'important');
-                            el.style.setProperty('padding', '0', 'important');
-                            el.style.setProperty('opacity', '0', 'important');
-                            el.style.setProperty('pointer-events', 'none', 'important');
-                            el.style.setProperty('position', 'absolute', 'important');
-                            el.style.setProperty('left', '-9999px', 'important');
-                            el.style.setProperty('top', '-9999px', 'important');
-                            el.style.setProperty('z-index', '-9999', 'important');
-                            el.style.setProperty('transform', 'scale(0)', 'important');
-                            
-                            // Also hide all children
-                            const children = el.querySelectorAll('*');
-                            children.forEach(child => {{
-                                child.style.setProperty('display', 'none', 'important');
-                                child.style.setProperty('visibility', 'hidden', 'important');
-                                child.style.setProperty('opacity', '0', 'important');
-                            }});
-                        }}
-                    }});
-                }} catch (e) {{
-                    // Ignore selector errors
-                }}
-            }});
-            
-            // Also check for any element in sidebar that looks like navigation
-            const sidebar = document.querySelector('[data-testid="stSidebar"]');
-            if (sidebar) {{
-                const allLinks = sidebar.querySelectorAll('a[href*="pages/"]');
-                allLinks.forEach(link => {{
-                    // Check if this link is NOT in our custom nav
-                    if (!link.closest('.custom-nav-item') && !link.closest('button')) {{
-                        const parent = link.closest('nav, div, section, ul, li');
-                        if (parent && parent !== sidebar) {{
-                            // This looks like Streamlit's nav
-                            try {{
-                                if (parent.parentNode) {{
-                                    parent.parentNode.removeChild(parent);
-                                }}
-                            }} catch (e) {{
-                                parent.style.setProperty('display', 'none', 'important');
-                                parent.style.setProperty('visibility', 'hidden', 'important');
-                            }}
-                        }}
-                    }}
-                }});
-            }}
-        }}
-        
-        // Run immediately and very frequently - especially after page loads/reruns
-        hideAutoNav();
-        setTimeout(hideAutoNav, 1);
-        setTimeout(hideAutoNav, 5);
-        setTimeout(hideAutoNav, 10);
-        setTimeout(hideAutoNav, 20);
-        setTimeout(hideAutoNav, 50);
-        setTimeout(hideAutoNav, 100);
-        setTimeout(hideAutoNav, 200);
-        setTimeout(hideAutoNav, 500);
-        setTimeout(hideAutoNav, 1000);
-        setInterval(hideAutoNav, 50);  // Check every 50ms
-        
-        // Also use MutationObserver to catch dynamically added elements - very aggressive
-        const navObserver = new MutationObserver((mutations) => {{
-            hideAutoNav();
-            // Also check again after a tiny delay
-            setTimeout(hideAutoNav, 1);
-            setTimeout(hideAutoNav, 10);
-        }});
-        navObserver.observe(document.body, {{ childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'data-testid'] }});
-        
-        // Also observe the sidebar specifically
-        const sidebar = document.querySelector('[data-testid="stSidebar"]');
-        if (sidebar) {{
-            navObserver.observe(sidebar, {{ childList: true, subtree: true, attributes: true }});
-        }}
-        
-        // Listen to all possible events that might cause re-rendering
-        ['click', 'mousedown', 'mouseup', 'keydown', 'keyup', 'change', 'input', 'focus', 'blur', 'submit'].forEach(eventType => {{
-            document.addEventListener(eventType, () => {{
-                hideAutoNav();  // Immediate
-                setTimeout(hideAutoNav, 1);
-                setTimeout(hideAutoNav, 10);
-                setTimeout(hideAutoNav, 50);
-                setTimeout(hideAutoNav, 100);
-                setTimeout(hideAutoNav, 200);
-            }}, true);  // Use capture phase to catch early
-        }});
-        
-        // Also listen to Streamlit-specific events if they exist
-        if (window.parent) {{
-            window.parent.addEventListener('message', () => {{
-                hideAutoNav();
-                setTimeout(hideAutoNav, 1);
-                setTimeout(hideAutoNav, 10);
-                setTimeout(hideAutoNav, 50);
-            }});
-        }}
-        
-        // Watch for any style changes that might unhide it
-        const styleObserver = new MutationObserver((mutations) => {{
-            mutations.forEach(mutation => {{
-                if (mutation.type === 'attributes' && (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {{
-                    const target = mutation.target;
-                    if (target.getAttribute('data-testid') === 'stSidebarNav' || target.closest('[data-testid="stSidebarNav"]')) {{
-                        hideAutoNav();
-                        setTimeout(hideAutoNav, 1);
-                    }}
-                }}
-            }});
-        }});
-        
-        // Observe all elements for style changes - set up immediately and on DOM ready
-        function setupStyleObserver() {{
-            const allElements = document.querySelectorAll('*');
-            allElements.forEach(el => {{
-                if (el.getAttribute('data-testid') === 'stSidebarNav' || el.closest('[data-testid="stSidebarNav"]')) {{
-                    styleObserver.observe(el, {{ attributes: true, attributeFilter: ['style', 'class'] }});
-                }}
-            }});
-        }}
-        
-        setupStyleObserver();
-        document.addEventListener('DOMContentLoaded', setupStyleObserver);
-        
-        // Also run on page visibility changes (when user switches tabs back)
-        document.addEventListener('visibilitychange', () => {{
-            if (!document.hidden) {{
-                hideAutoNav();
-                setTimeout(hideAutoNav, 10);
-                setTimeout(hideAutoNav, 50);
-            }}
-        }});
-        
-        // Intercept button clicks on navigation buttons to hide immediately
-        document.addEventListener('click', (e) => {{
-            const target = e.target;
-            // Check if it's one of our custom nav buttons
-            if (target.closest && (target.closest('button[data-testid*="nav_"]') || target.closest('.custom-nav-button'))) {{
-                // Hide immediately before navigation
-                hideAutoNav();
-                // And keep hiding after navigation
-                setTimeout(hideAutoNav, 1);
-                setTimeout(hideAutoNav, 10);
-                setTimeout(hideAutoNav, 50);
-                setTimeout(hideAutoNav, 100);
-                setTimeout(hideAutoNav, 200);
-                setTimeout(hideAutoNav, 500);
-            }}
-        }}, true);
-        
-        // Use requestAnimationFrame for continuous checking
-        function continuousHide() {{
-            hideAutoNav();
-            requestAnimationFrame(continuousHide);
-        }}
-        continuousHide();
-        }})();  // End IIFE
-        </script>
         """,
         unsafe_allow_html=True,
     )
@@ -854,13 +619,13 @@ def render_custom_navigation() -> None:
     
     # Get current page from session state (set by each page)
     try:
-        current_page = st.session_state.get("current_page", "")
+        current_page = st.session_state.get("current_page", DEFAULT_PAGE)
     except Exception:
-        current_page = ""
+        current_page = DEFAULT_PAGE
     
     # Navigation items - using _pages_disabled to prevent Streamlit auto-detection
     nav_items = [
-        {"title": "Overview", "page": "_pages_disabled/00_Overview.py", "indent": False},
+        {"title": "Overview", "page": DEFAULT_PAGE, "indent": False},
         {"title": "Inputs (Main - all sections)", "page": "_pages_disabled/01_Inputs.py", "indent": False},
         {"title": "Gross Rock Volume (GRV)", "page": "_pages_disabled/01_Inputs_Gross_Rock_Volume_GRV.py", "indent": True},
         {"title": "Net to Gross (NtG)", "page": "_pages_disabled/01_Inputs_Net_to_Gross_NtG.py", "indent": True},
@@ -893,7 +658,7 @@ def render_custom_navigation() -> None:
                 if st.button(
                     display_title,
                     key=f"nav_{item['page']}",
-                    use_container_width=True,
+                    width="stretch",
                     type="primary" if is_active else "secondary",
                 ):
                     st.session_state["_nav_target"] = item['page']
@@ -903,7 +668,7 @@ def render_custom_navigation() -> None:
             if st.sidebar.button(
                 display_title,
                 key=f"nav_{item['page']}",
-                use_container_width=True,
+                width="stretch",
                 type="primary" if is_active else "secondary",
             ):
                 st.session_state["_nav_target"] = item['page']
@@ -1489,7 +1254,7 @@ def create_dependency_matrix_ui_with_scatter_plots(
                         yaxis_title=p2,
                         height=300,
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
 
     return dep_matrix, dependencies
 
@@ -3131,9 +2896,9 @@ def render_param(
     unit_lbl = plot_unit_label if plot_unit_label else unit_hint
     st.plotly_chart(
         make_hist_cdf_figure(display_samples, f"{label} distribution", f"{label} ({unit_lbl})", "input"),
-        use_container_width=True,
+        width="stretch",
     )
-    st.dataframe(summary_table(display_samples, decimals=stats_decimals), use_container_width=True)
+    st.dataframe(summary_table(display_samples, decimals=stats_decimals), width="stretch")
 
     return samples
 
@@ -3590,7 +3355,7 @@ def render_run_controls_and_diagnostics(input_dict: dict):
     
     col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("Run Monte Carlo Simulation", type="primary", key="btn_run_sim", use_container_width=True):
+        if st.button("Run Monte Carlo Simulation", type="primary", key="btn_run_sim", width="stretch"):
             st.session_state["run_id"] = run_id + 1
             st.session_state["last_input_hash"] = current_hash
             st.session_state["last_run_ts"] = time.strftime("%Y-%m-%d %H:%M:%S")

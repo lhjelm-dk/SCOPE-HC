@@ -176,7 +176,7 @@ def render_saturation_inputs() -> None:
                 xlabel = r"$S_{\mathrm{hc}}$"
             st.plotly_chart(
                 make_hist_cdf_figure(const_array, title, xlabel, "input"),
-                use_container_width=True,
+                width="stretch",
             )
         else:
             # For PERT/Triangular/Uniform, use custom UI
@@ -299,7 +299,7 @@ def render_saturation_inputs() -> None:
             from .common import make_hist_cdf_figure
             st.plotly_chart(
                 make_hist_cdf_figure(samples, title, xlabel, "input"),
-                use_container_width=True,
+                width="stretch",
             )
         
         # Store submode
@@ -339,7 +339,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(const_array, r"$S_{w,\mathrm{oil\,zone}}$ distribution", 
                                     r"$S_{w,\mathrm{oil\,zone}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
         else:
             if dist_type_oil == "PERT":
@@ -448,7 +448,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(samples, r"$S_{w,\mathrm{oil\,zone}}$ distribution", 
                                     r"$S_{w,\mathrm{oil\,zone}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
 
         st.markdown(r"**Distribution for $S_{w,\mathrm{gas\,zone}}$:**")
@@ -478,7 +478,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(const_array, r"$S_{w,\mathrm{gas\,zone}}$ distribution", 
                                     r"$S_{w,\mathrm{gas\,zone}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
         else:
             if dist_type_gas == "PERT":
@@ -587,7 +587,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(samples, r"$S_{w,\mathrm{gas\,zone}}$ distribution", 
                                     r"$S_{w,\mathrm{gas\,zone}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
 
     # ---- Mode C: Per-phase HC saturations ----
@@ -622,7 +622,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(const_array, r"$S_{\mathrm{oil}}$ distribution", 
                                     r"$S_{\mathrm{oil}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
         else:
             if dist_type_oil == "PERT":
@@ -731,7 +731,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(samples, r"$S_{\mathrm{oil}}$ distribution", 
                                     r"$S_{\mathrm{oil}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
 
         st.markdown(r"**Distribution for $S_{\mathrm{gas}}$:**")
@@ -761,7 +761,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(const_array, r"$S_{\mathrm{gas}}$ distribution", 
                                     r"$S_{\mathrm{gas}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
         else:
             if dist_type_gas == "PERT":
@@ -870,7 +870,7 @@ def render_saturation_inputs() -> None:
             st.plotly_chart(
                 make_hist_cdf_figure(samples, r"$S_{\mathrm{gas}}$ distribution", 
                                     r"$S_{\mathrm{gas}}$", "input"),
-                use_container_width=True,
+                width="stretch",
             )
 
     st.caption(

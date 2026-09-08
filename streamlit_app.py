@@ -61,7 +61,8 @@ def load_page(page_path: str):
     return False
 
 # Initialize navigation first
-from scopehc.ui.common import init_theme, render_custom_navigation, render_sidebar_settings, render_color_legend
+from scopehc.ui.common import (DEFAULT_PAGE, init_theme, render_custom_navigation,
+                               render_sidebar_settings, render_color_legend)
 
 init_theme()
 render_custom_navigation()
@@ -70,7 +71,7 @@ render_sidebar_settings()
 render_color_legend()
 
 # Get current page from session state or default to Overview
-current_page = st.session_state.get("current_page", "_pages_disabled/00_Overview.py")
+current_page = st.session_state.get("current_page", DEFAULT_PAGE)
 
 # Load the current page
 load_page(current_page)

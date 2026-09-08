@@ -135,7 +135,7 @@ def main() -> None:
                 ("RES", "SENS"),
             ]
         )
-        st.graphviz_chart(dot, use_container_width=True)
+        st.graphviz_chart(dot, width="stretch")
     except (ImportError, Exception):
         # Fallback to Plotly for cloud deployments where graphviz binary is not available
         import plotly.graph_objects as go
@@ -237,7 +237,7 @@ def main() -> None:
             showlegend=False,
         )
         
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
 
     with st.expander("Assumptions and formulas", expanded=False):
         st.markdown(
@@ -305,6 +305,27 @@ def main() -> None:
     # Add disclaimer
     from scopehc.ui.common import render_disclaimer
     render_disclaimer()
+
+    # Support. `st.iframe` rather than `st.markdown`, which strips an <iframe> even with
+    # unsafe_allow_html and would render the embed as nothing at all, silently.
+    st.divider()
+    _left, _mid, _right = st.columns([1, 2, 1])
+    with _mid:
+        st.caption(
+            "**SCOPE-HC is free and open source, and it stays that way.** If it saved you "
+            "an afternoon or changed a number you were about to quote, you can buy me a "
+            "coffee."
+        )
+        st.iframe("https://ko-fi.com/lhjelm/?hidefeed=true&widget=true&embed=true&preview=true",
+                  height=712)
+        # A ko-fi widget is among the most-blocked third-party frames there is: uBlock
+        # Origin and Firefox’s strict tracking protection both drop it, and the viewer
+        # then sees an empty box with no way to tell whether it is broken or still
+        # loading. The link always works, so it sits beside the embed rather than instead.
+        st.caption(
+            "Not showing? Some ad blockers and Firefox’s strict mode drop embedded "
+            "widgets — [ko-fi.com/lhjelm](https://ko-fi.com/lhjelm) works either way."
+        )
 
 
 if __name__ == "__main__":

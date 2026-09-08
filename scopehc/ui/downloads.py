@@ -47,7 +47,7 @@ def render() -> None:
 
     st.subheader("Results Preview")
     st.caption(f"Showing first 50 of {num_trials:,} trials.")
-    st.dataframe(df_results.head(50), use_container_width=True, hide_index=True)
+    st.dataframe(df_results.head(50), width="stretch", hide_index=True)
 
     thr_column = None
     for candidate in [
@@ -64,7 +64,7 @@ def render() -> None:
         st.subheader(f"THR Summary ({thr_column})")
         st.dataframe(
             summary_table(df_results[thr_column].to_numpy(), decimals=2),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
     else:
@@ -94,7 +94,7 @@ def render() -> None:
             data=csv_payload if csv_payload is not None else "",
             file_name=f"scopehc_results_{num_trials}_trials.csv",
             mime="text/csv",
-            use_container_width=True,
+            width="stretch",
             disabled=csv_payload is None,
         )
     with col2:
@@ -103,7 +103,7 @@ def render() -> None:
             data=excel_payload if excel_payload is not None else b"",
             file_name=f"scopehc_results_{num_trials}_trials.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
+            width="stretch",
             disabled=excel_payload is None,
         )
         if excel_payload is None:

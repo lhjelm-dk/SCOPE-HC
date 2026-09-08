@@ -306,6 +306,36 @@ def main() -> None:
     from scopehc.ui.common import render_disclaimer
     render_disclaimer()
 
+    # Support. Through `components.html` rather than `st.markdown`: markdown strips an
+    # <iframe> even with unsafe_allow_html, so the embed would render as nothing at all and
+    # do it silently. The wrapper clears the inner 712 px plus Ko-fi’s own padding, or the
+    # widget scrolls inside a stub.
+    import streamlit.components.v1 as components
+
+    st.divider()
+    _left, _mid, _right = st.columns([1, 2, 1])
+    with _mid:
+        st.caption(
+            "**SCOPE-HC is free and open source, and it stays that way.** If it saved you "
+            "an afternoon or changed a number you were about to quote, you can buy me a "
+            "coffee."
+        )
+        components.html(
+            "<iframe id='kofiframe' "
+            "src='https://ko-fi.com/lhjelm/?hidefeed=true&widget=true&embed=true&preview=true' "
+            "style='border:none;width:100%;padding:4px;background:#f9f9f9;' "
+            "height='712' title='lhjelm'></iframe>",
+            height=740,
+        )
+        # A ko-fi widget is among the most-blocked third-party frames there is: uBlock
+        # Origin and Firefox’s strict tracking protection both drop it, and the viewer
+        # then sees an empty box with no way to tell whether it is broken or still
+        # loading. The link always works, so it sits beside the embed rather than instead.
+        st.caption(
+            "Not showing? Some ad blockers and Firefox’s strict mode drop embedded "
+            "widgets — [ko-fi.com/lhjelm](https://ko-fi.com/lhjelm) works either way."
+        )
+
 
 if __name__ == "__main__":
     main()

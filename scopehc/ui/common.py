@@ -24,6 +24,12 @@ from scopehc.config import (
     DEFAULTS,
     PALETTE,
 )
+#: The page the app opens on. Named here rather than typed at each use: the navigation and
+#: the router in `streamlit_app.py` both need it, they disagreed about it, and the symptom
+#: was silent -- on first load no nav button matched `current_page` and the active page went
+#: unhighlighted until the user clicked something.
+DEFAULT_PAGE = "_pages_disabled/00_Overview.py"
+
 from scopehc.utils import (
     invBg_to_Bg_rb_per_scf,
     clip01,
@@ -131,6 +137,7 @@ __all__ = [
     "export_to_csv",
     "export_to_excel",
     "render_disclaimer",
+    "DEFAULT_PAGE",
     "DEFAULTS",
     "HELP",
     "PARAM_COLORS",
@@ -337,6 +344,36 @@ def init_theme() -> None:
 
         .stButton>button[data-testid*="recalc"] {{
             color: white !important;
+        }}
+
+        /* The navigation carries the active page in Streamlit's own primary/secondary button
+           kind. The blanket gradient above is `!important` and overrides both, so every nav
+           button rendered the same red and the highlight was invisible -- the reason it looked
+           like the sidebar had "gone red". Scoped by the `nav_` widget key, which Streamlit
+           emits as a class on the element container, so nothing else in the app is touched. */
+        [class*="st-key-nav_"] .stButton>button {{
+            background: {bg_light} !important;
+            background-image: none !important;
+            color: {text_primary} !important;
+            border: 1px solid {border} !important;
+            box-shadow: none !important;
+            font-weight: 500 !important;
+        }}
+
+        [class*="st-key-nav_"] .stButton>button:hover {{
+            background: {bg_light} !important;
+            background-image: none !important;
+            border-color: {accent} !important;
+            transform: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }}
+
+        [class*="st-key-nav_"] .stButton>button[data-testid="stBaseButton-primary"] {{
+            background: {accent} !important;
+            background-image: none !important;
+            color: white !important;
+            border-color: {accent} !important;
+            font-weight: 600 !important;
         }}
 
         .stSlider>div>div>div>div {{
@@ -854,13 +891,13 @@ def render_custom_navigation() -> None:
     
     # Get current page from session state (set by each page)
     try:
-        current_page = st.session_state.get("current_page", "")
+        current_page = st.session_state.get("current_page", DEFAULT_PAGE)
     except Exception:
-        current_page = ""
+        current_page = DEFAULT_PAGE
     
     # Navigation items - using _pages_disabled to prevent Streamlit auto-detection
     nav_items = [
-        {"title": "Overview", "page": "_pages_disabled/00_Overview.py", "indent": False},
+        {"title": "Overview", "page": DEFAULT_PAGE, "indent": False},
         {"title": "Inputs (Main - all sections)", "page": "_pages_disabled/01_Inputs.py", "indent": False},
         {"title": "Gross Rock Volume (GRV)", "page": "_pages_disabled/01_Inputs_Gross_Rock_Volume_GRV.py", "indent": True},
         {"title": "Net to Gross (NtG)", "page": "_pages_disabled/01_Inputs_Net_to_Gross_NtG.py", "indent": True},

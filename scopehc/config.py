@@ -8,6 +8,11 @@ from dataclasses import dataclass
 RB_PER_M3 = 6.28981077
 RCF_PER_RB = 5.614583
 
+# Same values as UNIT_CONVERSIONS["bbl_to_m3"] / ["scf_to_m3"] in scopehc.ui.common,
+# restated here because config must not import from the UI layer.
+M3_PER_BBL = 1.0 / RB_PER_M3
+M3_PER_SCF = 0.0283168
+
 UNIT_DISPLAY = {
     "oilfield": {"oil_surface": "STB", "gas_surface": "scf", "boe": "BOE", "vol_m3": "m³"},
     "si": {"oil_surface": "m³", "gas_surface": "Sm³", "boe": "BOE", "vol_m3": "m³"},
@@ -124,6 +129,178 @@ HELP = {
     "area_uncert": "When enabled (depth methods only), a single trial-wise multiplier is sampled and applied to every area value in the depth vs. area table. Default: PERT(0.8, 1.0, 1.2).",
     "area_uncert_dist": "Choose the distribution for the area multiplier. PERT is typical for expert judgment; Triangular and Uniform are also supported.",
 }
+
+# ---------------------------------------------------------------------------------
+# Cross-plot explorer: the curated variable registry
+# ---------------------------------------------------------------------------------
+# What the Results-page cross-plot section offers on its axes. The point of the
+# registry is de-duplication: the exported trial table carries the same quantity in
+# three units (Recoverable_Oil_STB / _MMSTB / _Mm3), which is right for a spreadsheet
+# and wrong for a dropdown. Here each quantity appears once, in the unit matching the
+# sidebar unit system.
+#
+# Each entry:
+#   label   - what the dropdown shows (without the unit; that is appended)
+#   source  - ("session", key) for a sampled input array, ("res", key) for a value
+#             computed by compute_results. Nothing is recalculated here.
+#   unit    - str, or {"oilfield": ..., "metric": ...}
+#   factor  - multiplier from the source's own unit to the displayed one; str or dict
+#             as above
+#   invert  - True for depth-like variables, whose axis should point downwards
+#   color   - optional PARAM_COLORS key, so a cross-plot picks up the family colour
+#
+# An entry whose source array is absent from a given run (no condensate, non
+# depth-based GRV) is simply dropped from the menus.
+EXPLORER_GROUPS = [
+    (
+        "Geometry",
+        [
+            {"label": "GRV total", "source": ("session", "sGRV_m3_final"),
+             "unit": "×10⁶ m³", "factor": 1e-6, "color": "GRV_total_m3"},
+            {"label": "GRV oil zone", "source": ("session", "sGRV_oil_m3"),
+             "unit": "×10⁶ m³", "factor": 1e-6, "color": "GRV_oil_m3"},
+            {"label": "GRV gas zone", "source": ("session", "sGRV_gas_m3"),
+             "unit": "×10⁶ m³", "factor": 1e-6, "color": "GRV_gas_m3"},
+            {"label": "HC contact depth (OWC)", "source": ("session", "sD_hc"),
+             "unit": "m", "factor": 1.0, "invert": True, "color": "HCDepth"},
+            {"label": "GOC depth", "source": ("session", "sGOC_depth"),
+             "unit": "m", "factor": 1.0, "invert": True, "color": "GOC"},
+            {"label": "Spill depth", "source": ("session", "sD_spill"),
+             "unit": "m", "factor": 1.0, "invert": True, "color": "SpillPoint"},
+            {"label": "Oil column height", "source": ("session", "sOil_Column_Height"),
+             "unit": "m", "factor": 1.0, "color": "Oil_Column_Height"},
+            {"label": "Gas column height", "source": ("session", "sGas_Column_Height"),
+             "unit": "m", "factor": 1.0, "color": "Gas_Column_Height"},
+            {"label": "Area", "source": ("session", "sA"), "unit": "km²", "factor": 1.0},
+            {"label": "Reservoir thickness", "source": ("session", "sh"),
+             "unit": "m", "factor": 1.0},
+            {"label": "Reservoir thickness (depth-based)",
+             "source": ("session", "sReservoirThickness"), "unit": "m", "factor": 1.0},
+            {"label": "Geometric correction factor", "source": ("session", "sGCF"),
+             "unit": "-", "factor": 1.0},
+        ],
+    ),
+    (
+        "Reservoir",
+        [
+            {"label": "Net-to-gross", "source": ("session", "sNtG"),
+             "unit": "-", "factor": 1.0, "color": "NtG"},
+            {"label": "Porosity", "source": ("session", "sp"),
+             "unit": "-", "factor": 1.0, "color": "Porosity"},
+            {"label": "Pore volume (total)", "source": ("res", "PV_total_m3"),
+             "unit": "×10⁶ m³", "factor": 1e-6},
+            {"label": "Pore volume (oil zone)", "source": ("res", "PV_oil_m3"),
+             "unit": "×10⁶ m³", "factor": 1e-6, "color": "PV_oil_m3"},
+            {"label": "Pore volume (gas zone)", "source": ("res", "PV_gas_m3"),
+             "unit": "×10⁶ m³", "factor": 1e-6, "color": "PV_gas_m3"},
+            {"label": "HC pore volume (oil zone)", "source": ("res", "PV_oil_hc_m3"),
+             "unit": "×10⁶ m³", "factor": 1e-6, "color": "PV_oil_hc_m3"},
+            {"label": "HC pore volume (gas zone)", "source": ("res", "PV_gas_hc_m3"),
+             "unit": "×10⁶ m³", "factor": 1e-6, "color": "PV_gas_hc_m3"},
+        ],
+    ),
+    (
+        "Fluids & PVT",
+        [
+            {"label": "Bg", "source": ("session", "sBg"),
+             "unit": "rb/scf", "factor": 1.0, "color": "Bg_rb_per_scf"},
+            {"label": "1/Bo", "source": ("session", "sInvBo"),
+             "unit": "STB/rb", "factor": 1.0, "color": "InvBo_STB_per_rb"},
+            {"label": "GOR", "source": ("session", "sGOR"),
+             "unit": "scf/STB", "factor": 1.0, "color": "GOR_scf_per_STB"},
+            {"label": "Condensate yield", "source": ("session", "sCY"),
+             "unit": "STB/MMscf", "factor": 1.0, "color": "CGR_STB_per_MMscf"},
+            {"label": "RF oil", "source": ("session", "sRF_oil"),
+             "unit": "-", "factor": 1.0, "color": "RF_oil"},
+            {"label": "RF gas", "source": ("session", "sRF_gas"),
+             "unit": "-", "factor": 1.0, "color": "RF_gas"},
+            {"label": "RF condensate", "source": ("session", "sRF_cond"),
+             "unit": "-", "factor": 1.0, "color": "RF_cond"},
+            {"label": "RF associated gas", "source": ("session", "sRF_assoc_gas"),
+             "unit": "-", "factor": 1.0, "color": "RF"},
+        ],
+    ),
+    (
+        "Saturation",
+        [
+            {"label": "HC saturation (oil zone)", "source": ("session", "Shc_oil"),
+             "unit": "-", "factor": 1.0, "color": "Shc_oil"},
+            {"label": "HC saturation (gas zone)", "source": ("session", "Shc_gas"),
+             "unit": "-", "factor": 1.0, "color": "Shc_gas"},
+            {"label": "HC saturation (global)", "source": ("session", "Shc_global"),
+             "unit": "-", "factor": 1.0, "color": "Shc_global"},
+            {"label": "Sw (global)", "source": ("session", "Sw_global"),
+             "unit": "-", "factor": 1.0, "color": "Sw_global"},
+            {"label": "Sw (oil zone)", "source": ("session", "Sw_oilzone"),
+             "unit": "-", "factor": 1.0, "color": "Sw_oilzone"},
+            {"label": "Sw (gas zone)", "source": ("session", "Sw_gaszone"),
+             "unit": "-", "factor": 1.0, "color": "Sw_gaszone"},
+        ],
+    ),
+    (
+        "In-place",
+        [
+            {"label": "Oil in place (STOIIP)", "source": ("res", "STOIIP_STB"),
+             "unit": {"oilfield": "MMSTB", "metric": "Mm³"},
+             "factor": {"oilfield": 1e-6, "metric": M3_PER_BBL / 1e6},
+             "color": "Oil_inplace"},
+            {"label": "Gas in place (GIIP)", "source": ("res", "GIIP_scf"),
+             "unit": {"oilfield": "Bscf", "metric": "Bm³"},
+             "factor": {"oilfield": 1e-9, "metric": M3_PER_SCF / 1e9},
+             "color": "Gas_inplace"},
+        ],
+    ),
+    (
+        "Recoverable",
+        [
+            {"label": "Recoverable oil", "source": ("res", "Oil_STB_rec"),
+             "unit": {"oilfield": "MMSTB", "metric": "Mm³"},
+             "factor": {"oilfield": 1e-6, "metric": M3_PER_BBL / 1e6},
+             "color": "Oil_STB_rec"},
+            {"label": "Recoverable free gas", "source": ("res", "Gas_free_scf_rec"),
+             "unit": {"oilfield": "Bscf", "metric": "Bm³"},
+             "factor": {"oilfield": 1e-9, "metric": M3_PER_SCF / 1e9},
+             "color": "Gas_free_scf_rec"},
+            {"label": "Recoverable associated gas", "source": ("res", "Gas_assoc_scf_rec"),
+             "unit": {"oilfield": "Bscf", "metric": "Bm³"},
+             "factor": {"oilfield": 1e-9, "metric": M3_PER_SCF / 1e9},
+             "color": "Gas_assoc_scf_rec"},
+            {"label": "Recoverable total gas", "source": ("res", "Total_gas_scf_rec"),
+             "unit": {"oilfield": "Bscf", "metric": "Bm³"},
+             "factor": {"oilfield": 1e-9, "metric": M3_PER_SCF / 1e9},
+             "color": "Total_gas_scf_rec"},
+            {"label": "Recoverable condensate", "source": ("res", "Cond_STB_rec"),
+             "unit": {"oilfield": "MMSTB", "metric": "Mm³"},
+             "factor": {"oilfield": 1e-6, "metric": M3_PER_BBL / 1e6},
+             "color": "Cond_STB_rec"},
+            {"label": "Recoverable total liquids", "source": ("res", "Total_liquids_STB"),
+             "unit": {"oilfield": "MMSTB", "metric": "Mm³"},
+             "factor": {"oilfield": 1e-6, "metric": M3_PER_BBL / 1e6},
+             "color": "Oil_recoverable"},
+            {"label": "Total HC resource (THR)", "source": ("res", "Total_surface_BOE"),
+             "unit": {"oilfield": "MMBOE", "metric": "Mm³ BOE"},
+             "factor": {"oilfield": 1e-6, "metric": M3_PER_BBL / 1e6},
+             "color": "Total_surface_BOE"},
+        ],
+    ),
+]
+
+# Defaults for the correlation matrix: the inputs that drive the answer, plus the
+# headline outputs. Anything absent from the run is dropped.
+EXPLORER_MATRIX_DEFAULTS = [
+    "GRV total",
+    "Net-to-gross",
+    "Porosity",
+    "HC saturation (oil zone)",
+    "RF oil",
+    "1/Bo",
+    "HC contact depth (OWC)",
+    "Oil in place (STOIIP)",
+    "Gas in place (GIIP)",
+    "Recoverable oil",
+    "Recoverable total gas",
+    "Total HC resource (THR)",
+]
 
 WORKFLOW_RIBBON = """
 <div style="margin:.5rem 0 1rem 0;padding:.6rem 1rem;border-radius:8px;background:#f7f7fb;border:1px solid #ececf3;">

@@ -3160,6 +3160,22 @@ def collect_all_trial_data() -> Optional[Dict[str, List[float]]]:
     if "sGas_Column_Height" in st.session_state:
         trial_data["Gas_Column_Height_m"] = st.session_state["sGas_Column_Height"].tolist()
     
+    # Per-trial geometry that was sampled but never tabulated. The cross-plot section
+    # on the Results page needs these to answer "volume vs contact depth"; they are
+    # equally useful in the export, which is why they go in here rather than in a
+    # frame of their own. Area, thickness and GCF are already covered by
+    # `additional_params` above.
+    for session_key, column in (
+        ("sD_hc", "HC_Contact_Depth_m"),
+        ("sD_spill", "Spill_Depth_m"),
+        ("sReservoirThickness", "Reservoir_Thickness_m"),
+    ):
+        if session_key not in st.session_state:
+            continue
+        arr = np.atleast_1d(np.asarray(st.session_state[session_key], dtype=float))
+        if arr.size == num_trials:
+            trial_data[column] = arr.tolist()
+
     # Add split GRV if available
     if "sGRV_oil_m3" in st.session_state:
         trial_data["GRV_oil_m3"] = st.session_state["sGRV_oil_m3"].tolist()

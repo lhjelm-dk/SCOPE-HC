@@ -108,9 +108,11 @@ def create_summary_sheet(writer, sim_data: Dict[str, Any]):
             summary_data.append({
                 'Parameter': col,
                 'Mean': stats.get('mean', np.mean(data)),
-                'P10': stats.get('P10', np.percentile(data, 10)),
-                'P50': stats.get('P50', np.percentile(data, 50)),
-                'P90': stats.get('P90', np.percentile(data, 90)),
+                # nan, not a raw percentile: stats is empty only for an all-NaN
+                # column, and a raw percentile would ignore the active convention.
+                'P10': stats.get('P10', float('nan')),
+                'P50': stats.get('P50', float('nan')),
+                'P90': stats.get('P90', float('nan')),
                 'Std': stats.get('std_dev', np.std(data)),
                 'Min': stats.get('min', np.min(data)),
                 'Max': stats.get('max', np.max(data))

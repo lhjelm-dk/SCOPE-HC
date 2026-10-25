@@ -46,7 +46,7 @@ def _render_violin_plots(
         gas_free_display = gas_free_boe / 1e6
         gas_assoc_display = gas_assoc_boe / 1e6
         cond_display = cond_boe / 1e6
-        boe_unit = "MBOE"
+        boe_unit = "MMBOE"
     else:
         conversion = UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
         oil_display = oil_boe * conversion
@@ -154,7 +154,7 @@ def _render_thr_breakdown(
     st.markdown("#### THR Breakdown by Fluid Type (BOE)")
     if unit_system == "oilfield":
         conversion = 1e6
-        boe_unit = "MBOE"
+        boe_unit = "MMBOE"
         oil_display = oil_boe / conversion
         cond_display = cond_boe / conversion
         gas_free_display = gas_free_boe / conversion
@@ -364,7 +364,7 @@ def _create_tornado_plot(unit_system: str, target_volume: str, gas_scf_per_boe: 
             base_gas = base_gas_scf_mean / 1e9  # Bscf
             base_assoc = base_assoc_scf_mean / 1e9  # Bscf
             base_cond = base_cond_stb_mean / 1e6  # MMSTB
-            base_thr = base_thr_boe_mean / 1e6  # MBOE
+            base_thr = base_thr_boe_mean / 1e6  # MMBOE
         else:
             # Metric: convert STB to m³, scf to m³, BOE to m³
             base_oil = base_oil_stb_mean * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6  # Mm³
@@ -714,7 +714,7 @@ def _create_tornado_plot(unit_system: str, target_volume: str, gas_scf_per_boe: 
         title = f"Recoverable Condensate Sensitivity Analysis (Impact)<br><sub>Base Case: {base_value:.2f} {units}</sub>"
         xaxis_title = f"Impact on Recoverable Condensate ({units})"
     else:
-        units = "MBOE" if unit_system == "oilfield" else "Mm³ BOE"
+        units = "MMBOE" if unit_system == "oilfield" else "Mm³ BOE"
         title = f"Total Hydrocarbon Resource Sensitivity Analysis (Impact)<br><sub>Base Case: {base_value:.2f} {units}</sub>"
         xaxis_title = f"Impact on THR ({units})"
 
@@ -757,7 +757,7 @@ def _render_sensitivity_summary(
     elif target_volume == "Condensate":
         units = "MMSTB" if unit_system == "oilfield" else "Mm³"
     else:
-        units = "MBOE" if unit_system == "oilfield" else "Mm³ BOE"
+        units = "MMBOE" if unit_system == "oilfield" else "Mm³ BOE"
 
     rows = []
     for sens in sensitivities:
@@ -823,7 +823,7 @@ def render() -> None:
     st.markdown("## Total Hydrocarbon Resource (THR)")
     if unit_system == "oilfield":
         thr_display = thr_boe / 1e6
-        thr_unit = "MBOE"
+        thr_unit = "MMBOE"
     else:
         thr_display = thr_boe * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
         thr_unit = "Mm³ BOE"

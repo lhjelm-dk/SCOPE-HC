@@ -406,7 +406,7 @@ def render() -> None:
 
     if unit_system == "oilfield":
         thr_display = thr_boe / 1e6
-        thr_unit = "MBOE"
+        thr_unit = "MMBOE"
     else:
         thr_display = thr_boe * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
         thr_unit = "Mm³ BOE"
@@ -525,7 +525,7 @@ def render() -> None:
         cond_boe_display = Cond_BOE / 1e6
         gas_free_boe_display = Gas_free_BOE / 1e6
         gas_assoc_boe_display = Gas_assoc_BOE / 1e6
-        boe_unit = "MBOE"
+        boe_unit = "MMBOE"
     else:
         conversion = UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
         oil_boe_display = Oil_BOE * conversion
@@ -624,7 +624,7 @@ def render() -> None:
 
         if unit_system == "oilfield":
             conversion = 1e6
-            boe_unit_detail = "MBOE"
+            boe_unit_detail = "MMBOE"
         else:
             conversion = UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
             boe_unit_detail = "Mm³ BOE"

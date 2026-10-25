@@ -8,6 +8,8 @@ import streamlit as st
 from scopehc.compute import compute_results, resolve_grv_split
 from scopehc.utils import validate_rf_fractions
 
+from .explorer import render_crossplot_section
+
 from .common import (
     init_theme,
     make_hist_cdf_figure,
@@ -672,6 +674,10 @@ def render() -> None:
 
     st.markdown("---")
     _render_column_distributions_overlay()
+
+    # Cross-plot explorer. It is handed the `res` computed above rather than
+    # recomputing anything, so its numbers cannot disagree with the sections here.
+    render_crossplot_section(res, unit_system)
 
 
 def _render_column_distributions_overlay() -> None:

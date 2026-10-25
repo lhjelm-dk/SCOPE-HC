@@ -80,7 +80,10 @@ def create_excel_file(sim_data: Dict[str, Any]) -> bytes:
         
         # Summary sheet
         create_summary_sheet(writer, sim_data)
-        
+
+        # Cross-plot sheet (only when the Results-page explorer has been used)
+        create_crossplot_sheet(writer)
+
         # Metadata sheet
         create_metadata_sheet(writer, sim_data)
     
@@ -115,6 +118,76 @@ def create_summary_sheet(writer, sim_data: Dict[str, Any]):
     
     summary_df = pd.DataFrame(summary_data)
     summary_df.to_excel(writer, sheet_name='Summary', index=False)
+
+
+def create_crossplot_sheet(writer):
+    """Write the Results-page cross-plot selection to its own sheet.
+
+    Reads what the explorer last computed (`crossplot_export` in session state) rather
+    than recomputing it, so the workbook carries exactly the numbers that were on
+    screen. Skipped entirely when the section has not been used in this session.
+    """
+    export = st.session_state.get("crossplot_export")
+    if not isinstance(export, dict):
+        return
+
+    sheet = "Cross-plot stats"
+    stats = export.get("stats") or {}
+    header = pd.DataFrame(
+        {
+            "Item": [
+                "X variable",
+                "Y variable",
+                "Bin width",
+                "Trials used",
+                "Trials in run",
+                "Percentile convention",
+                "Pearson r",
+                "Pearson p",
+                "Spearman rho",
+                "Spearman p",
+                "R squared",
+                "Slope (Y per X)",
+                "Intercept",
+                "Log-log exponent",
+            ],
+            "Value": [
+                export.get("x", ""),
+                export.get("y", ""),
+                export.get("bin_width"),
+                export.get("n_used"),
+                export.get("n_total"),
+                "exceedance (P10 high)"
+                if export.get("use_exceedance", True)
+                else "non-exceedance (P10 low)",
+                stats.get("pearson_r"),
+                stats.get("pearson_p"),
+                stats.get("spearman_rho"),
+                stats.get("spearman_p"),
+                stats.get("r_squared"),
+                stats.get("slope"),
+                stats.get("intercept"),
+                stats.get("log_slope"),
+            ],
+        }
+    )
+    header.to_excel(writer, sheet_name=sheet, index=False, startrow=0)
+
+    row = len(header) + 3
+    bins = export.get("bins")
+    if isinstance(bins, pd.DataFrame) and not bins.empty:
+        pd.DataFrame({"Binned statistics": []}).to_excel(
+            writer, sheet_name=sheet, index=False, startrow=row - 1
+        )
+        bins.to_excel(writer, sheet_name=sheet, index=False, startrow=row)
+        row += len(bins) + 3
+
+    matrix = export.get("matrix")
+    if isinstance(matrix, pd.DataFrame) and not matrix.empty:
+        pd.DataFrame({"Correlation matrix": []}).to_excel(
+            writer, sheet_name=sheet, index=False, startrow=row - 1
+        )
+        matrix.to_excel(writer, sheet_name=sheet, startrow=row)
 
 
 def create_metadata_sheet(writer, sim_data: Dict[str, Any]):

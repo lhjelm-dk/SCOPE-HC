@@ -101,9 +101,26 @@ SECTIONS: Tuple[Section, ...] = (
                 sec(
                     "inputs.grv.atgcf.calculator",
                     "Geometric correction factor calculator",
-                    items=(fig("inputs.grv.atgcf.calculator.fig", "Geometric correction factor"),),
+                    items=(
+                        fig("inputs.grv.atgcf.calculator.fig", "Final GCF distribution"),
+                        tab("inputs.grv.atgcf.calculator.tab", "GCF statistics"),
+                    ),
                 ),
-                sec("inputs.grv.atgcf.sensitivity", "Sensitivity summary"),
+                sec(
+                    "inputs.grv.atgcf.sensitivity",
+                    "Sensitivity summary",
+                    items=(fig("inputs.grv.atgcf.sensitivity.fig", "GCF sensitivity to area, thickness and dip"),),
+                ),
+                # The calculated GRV had no heading of its own: its plot followed the
+                # sensitivity summary and read as part of it.
+                sec(
+                    "inputs.grv.atgcf.result",
+                    "Calculated GRV",
+                    items=(
+                        fig("inputs.grv.atgcf.result.fig", "Calculated GRV distribution"),
+                        tab("inputs.grv.atgcf.result.tab", "Calculated GRV statistics"),
+                    ),
+                ),
             )),
             sec(
                 "inputs.grv.deptharea",

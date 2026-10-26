@@ -24,6 +24,7 @@ EXPECTED_SECTIONS = [
     ("2.1.2", "inputs.grv.atgcf", "Area, thickness and geometric correction"),
     ("2.1.2.1", "inputs.grv.atgcf.calculator", "Geometric correction factor calculator"),
     ("2.1.2.2", "inputs.grv.atgcf.sensitivity", "Sensitivity summary"),
+    ("2.1.2.3", "inputs.grv.atgcf.result", "Calculated GRV"),
     ("2.1.3", "inputs.grv.deptharea", "Depth-area relationship"),
     ("2.1.4", "inputs.grv.depths", "Depth distributions"),
     ("2.1.4.1", "inputs.grv.depths.spill", "Spill point depth"),

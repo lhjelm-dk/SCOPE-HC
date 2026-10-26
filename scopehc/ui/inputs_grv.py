@@ -296,7 +296,9 @@ def _display_split_grv_results(prefix_key: str) -> None:
             ),
             width="stretch",
         )
+        numbered.figure_caption("inputs.grv.results.oil.fig")
         st.dataframe(summary_table(grv_total / 1e6, decimals=2), width="stretch")
+        numbered.table_caption("inputs.grv.results.oil.tab")
         st.caption("ℹ️ Oil only: entire GRV is oil.")
         
     elif fluid_type == "Gas":
@@ -310,7 +312,9 @@ def _display_split_grv_results(prefix_key: str) -> None:
             ),
             width="stretch",
         )
+        numbered.figure_caption("inputs.grv.results.gas.fig")
         st.dataframe(summary_table(grv_total / 1e6, decimals=2), width="stretch")
+        numbered.table_caption("inputs.grv.results.gas.tab")
         st.caption("ℹ️ Gas only: entire GRV is gas.")
         
     else:  # Oil + Gas
@@ -327,7 +331,9 @@ def _display_split_grv_results(prefix_key: str) -> None:
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.oil.fig")
                 st.dataframe(summary_table(grv_oil / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.oil.tab")
             
             with col2:
                 numbered.heading("inputs.grv.results.gas")
@@ -340,7 +346,9 @@ def _display_split_grv_results(prefix_key: str) -> None:
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.gas.fig")
                 st.dataframe(summary_table(grv_gas / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.gas.tab")
             
             with col3:
                 numbered.heading("inputs.grv.results.total")
@@ -353,7 +361,9 @@ def _display_split_grv_results(prefix_key: str) -> None:
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.total.fig")
                 st.dataframe(summary_table(grv_total / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.total.tab")
             
             # Combined summary table
             numbered.heading("inputs.grv.results.summary")
@@ -404,6 +414,7 @@ def _display_split_grv_results(prefix_key: str) -> None:
             
             df_combined = pd.DataFrame(summary_data)
             st.dataframe(df_combined, width="stretch", hide_index=True)
+            numbered.table_caption("inputs.grv.results.summary.tab")
             
             # Verify split
             f_oil_key = f"{prefix_key}_f_oil"
@@ -463,7 +474,9 @@ def _render_column_heights() -> None:
                 ),
                 width="stretch",
             )
+            numbered.figure_caption("inputs.grv.columns.gas.fig")
             st.dataframe(summary_table(gas_heights, decimals=1), width="stretch")
+            numbered.table_caption("inputs.grv.columns.gas.tab")
         else:
             st.info("No gas column (GOC at or below HCWC)")
     
@@ -479,7 +492,9 @@ def _render_column_heights() -> None:
                 ),
                 width="stretch",
             )
+            numbered.figure_caption("inputs.grv.columns.oil.fig")
             st.dataframe(summary_table(oil_heights, decimals=1), width="stretch")
+            numbered.table_caption("inputs.grv.columns.oil.tab")
         else:
             st.info("No oil column (GOC at or above top structure)")
     
@@ -512,6 +527,7 @@ def _render_column_heights() -> None:
         title="Gas & Oil Column Height Distributions"
     )
     st.plotly_chart(fig, width="stretch")
+    numbered.figure_caption("inputs.grv.columns.overlay.fig")
 
 
 def _apply_fluid_type_split(prefix_key: str, total_grv: np.ndarray, num_sims: int) -> None:
@@ -1090,6 +1106,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 yaxis=dict(range=[0, 1]),
             )
             st.plotly_chart(fig, width="content")
+            numbered.figure_caption("inputs.grv.atgcf.calculator.fig")
 
             st.markdown(
                 f"""
@@ -1165,7 +1182,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 ),
                 width="stretch",
             )
+            numbered.figure_caption("inputs.grv.atgcf.calculator.fig")
             st.dataframe(summary_table(sGCF, decimals=3), width="stretch")
+            numbered.table_caption("inputs.grv.atgcf.calculator.tab")
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown(
@@ -1334,6 +1353,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             else:
                 col3.metric("Dip Angle Impact", "N/A")
             st.plotly_chart(fig_sens, width="stretch")
+            numbered.figure_caption("inputs.grv.atgcf.sensitivity.fig")
             st.markdown("</div>", unsafe_allow_html=True)
 
         sh = render_param(
@@ -1347,13 +1367,16 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
         )
 
         sGRV_m3 = (sA * 1_000_000.0) * sh * sGCF
+        numbered.heading("inputs.grv.atgcf.result")
         st.plotly_chart(
             make_hist_cdf_figure(
                 sGRV_m3 / 1e6, "Calculated GRV distribution", "GRV (×10^6 m³)", "calculated"
             ),
             width="stretch",
         )
+        numbered.figure_caption("inputs.grv.atgcf.result.fig")
         st.dataframe(summary_table(sGRV_m3 / 1e6, decimals=2), width="stretch")
+        numbered.table_caption("inputs.grv.atgcf.result.tab")
         
         # Store total GRV for split logic
         st.session_state["atgcf_GRV_total_m3"] = sGRV_m3
@@ -1903,6 +1926,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 height=400
             )
             st.plotly_chart(fig, width="stretch")
+            numbered.figure_caption("inputs.grv.depths.goc.fig")
             st.caption("Depth-area and volume relationships. GRV = Top Volume - Base Volume.")
         
         # Arrays to store split GRV and column heights
@@ -2039,7 +2063,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 ),
                 width="stretch",
             )
+            numbered.figure_caption("inputs.grv.results.oil.fig")
             st.dataframe(summary_table(sGRV_oil_m3 / 1e6, decimals=2), width="stretch")
+            numbered.table_caption("inputs.grv.results.oil.tab")
             st.caption("ℹ️ Oil only: entire hydrocarbon column is oil.")
             
         elif fluid_type == "Gas":
@@ -2053,7 +2079,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 ),
                 width="stretch",
             )
+            numbered.figure_caption("inputs.grv.results.gas.fig")
             st.dataframe(summary_table(sGRV_gas_m3 / 1e6, decimals=2), width="stretch")
+            numbered.table_caption("inputs.grv.results.gas.tab")
             st.caption("ℹ️ Gas only: entire hydrocarbon column is gas.")
             
         else:  # Oil + Gas
@@ -2069,7 +2097,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.oil.fig")
                 st.dataframe(summary_table(sGRV_oil_m3 / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.oil.tab")
             
             with col2:
                 numbered.heading("inputs.grv.results.gas")
@@ -2082,7 +2112,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.gas.fig")
                 st.dataframe(summary_table(sGRV_gas_m3 / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.gas.tab")
             
             with col3:
                 numbered.heading("inputs.grv.results.total")
@@ -2095,7 +2127,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.total.fig")
                 st.dataframe(summary_table(sGRV_m3 / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.total.tab")
             
             # Combined summary table for depth-based method (spill + HC contact)
             numbered.heading("inputs.grv.results.summary")
@@ -2146,6 +2180,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             
             df_combined = pd.DataFrame(summary_data)
             st.dataframe(df_combined, width="stretch", hide_index=True)
+            numbered.table_caption("inputs.grv.results.summary.tab")
             
             # Show GOC mode info
             goc_mode = st.session_state.get("da_goc_mode", None)
@@ -2186,6 +2221,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             ),
             width="stretch",
         )
+        numbered.figure_caption("inputs.grv.abovespill.fig")
 
     elif grv_option == "Depth-based: Top + Res. thickness + Contact(s)":
         st.caption("Provide top structure depth table and constant thickness. GRV is integrated accordingly.")
@@ -2767,6 +2803,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                                       legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
                                       width=None, height=400)
                     st.plotly_chart(fig, width="stretch")
+                    numbered.figure_caption("inputs.grv.depths.goc.fig")
 
                     st.caption("Contacts integration using A_top(z): left shows top area; right shows cumulative ∫A(z)dz with Top/Spill/GOC/HCWC.")
         
@@ -2972,7 +3009,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 ),
                 width="stretch",
             )
+            numbered.figure_caption("inputs.grv.results.oil.fig")
             st.dataframe(summary_table(sGRV_oil_m3 / 1e6, decimals=2), width="stretch")
+            numbered.table_caption("inputs.grv.results.oil.tab")
             st.caption("ℹ️ Oil only: entire hydrocarbon column is oil.")
             
         elif fluid_type == "Gas":
@@ -2986,7 +3025,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 ),
                 width="stretch",
             )
+            numbered.figure_caption("inputs.grv.results.gas.fig")
             st.dataframe(summary_table(sGRV_gas_m3 / 1e6, decimals=2), width="stretch")
+            numbered.table_caption("inputs.grv.results.gas.tab")
             st.caption("ℹ️ Gas only: entire hydrocarbon column is gas.")
             
         else:  # Oil + Gas
@@ -3002,7 +3043,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.oil.fig")
                 st.dataframe(summary_table(sGRV_oil_m3 / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.oil.tab")
             
             with col2:
                 numbered.heading("inputs.grv.results.gas")
@@ -3015,7 +3058,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.gas.fig")
                 st.dataframe(summary_table(sGRV_gas_m3 / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.gas.tab")
             
             with col3:
                 numbered.heading("inputs.grv.results.total")
@@ -3028,7 +3073,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     ),
                     width="stretch",
                 )
+                numbered.figure_caption("inputs.grv.results.total.fig")
                 st.dataframe(summary_table(sGRV_m3 / 1e6, decimals=2), width="stretch")
+                numbered.table_caption("inputs.grv.results.total.tab")
             
             # Combined summary table for depth-based method
             numbered.heading("inputs.grv.results.summary")
@@ -3079,6 +3126,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             
             df_combined = pd.DataFrame(summary_data)
             st.dataframe(df_combined, width="stretch", hide_index=True)
+            numbered.table_caption("inputs.grv.results.summary.tab")
             
             # Show GOC mode info
             goc_mode = st.session_state.get("da_goc_mode_D", None)
@@ -3116,6 +3164,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             ),
             width="stretch",
         )
+        numbered.figure_caption("inputs.grv.abovespill.fig")
 
     else:
         st.error("Unsupported GRV option selected.")
@@ -3209,7 +3258,9 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             ),
             width="stretch",
         )
+        numbered.figure_caption("inputs.grv.final.fig")
         st.dataframe(summary_table(sGRV_m3_final / 1e6, decimals=2), width="stretch")
+        numbered.table_caption("inputs.grv.final.tab")
         st.markdown("</div>", unsafe_allow_html=True)
 
     # CRITICAL: Always ensure sGRV_oil_m3 and sGRV_gas_m3 are set correctly based on CURRENT fluid_type

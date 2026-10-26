@@ -7,6 +7,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from scipy.stats import linregress
 
+from . import numbered
 from .common import (
     PALETTE,
     HELP,
@@ -24,7 +25,7 @@ from scopehc.sampling import sample_scalar_dist
 
 def render_dependencies(num_sims: int, defaults, show_inline_tips: bool) -> None:
     st.markdown("---")
-    st.markdown("## Parameter Dependencies/Correlations")
+    numbered.heading("dependencies.matrix")
     st.markdown(
         "Configure correlations between specific parameter pairs to model realistic dependencies in your analysis."
     )
@@ -364,7 +365,7 @@ def _render_correlation_cross_plots(
         return
     
     st.markdown("---")
-    st.markdown("### Correlation Cross Plots")
+    numbered.heading("dependencies.crossplots")
     st.markdown(
         "Scatter plots showing parameter relationships before (gray) and after (red) applying correlations. "
         "Every 100th trial is shown. Linear regression lines, formulas, and R² values are displayed."
@@ -483,6 +484,7 @@ def _render_correlation_cross_plots(
         )
         
         st.plotly_chart(fig, width="stretch")
+        numbered.figure_caption("dependencies.crossplots.fig")
         
         # Display regression statistics
         col1, col2 = st.columns(2)

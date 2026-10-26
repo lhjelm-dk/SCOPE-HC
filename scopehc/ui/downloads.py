@@ -45,9 +45,10 @@ def render() -> None:
     unit_system = get_unit_system()
     gas_scf_per_boe = st.session_state.get("gas_scf_per_boe", 6000.0)
 
-    st.subheader("Results Preview")
+    numbered.heading("downloads.preview")
     st.caption(f"Showing first 50 of {num_trials:,} trials.")
     st.dataframe(df_results.head(50), width="stretch", hide_index=True)
+    numbered.table_caption("downloads.preview.tab")
 
     thr_column = None
     for candidate in [
@@ -61,12 +62,13 @@ def render() -> None:
             break
 
     if thr_column:
-        st.subheader(f"THR Summary ({thr_column})")
+        numbered.heading("downloads.thr", f"THR summary ({thr_column})")
         st.dataframe(
             summary_table(df_results[thr_column].to_numpy(), decimals=2),
             width="stretch",
             hide_index=True,
         )
+        numbered.table_caption("downloads.thr.tab")
     else:
         st.caption("THR column not found in results; preview limited to raw trials.")
 
@@ -79,7 +81,7 @@ def render() -> None:
     }
 
     st.markdown("---")
-    st.subheader("Export Options")
+    numbered.heading("downloads.options")
     st.caption(
         "Download raw trial data for further analysis or archiving. Excel exports include results, summary statistics, and metadata sheets."
     )

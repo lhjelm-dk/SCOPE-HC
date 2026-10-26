@@ -974,9 +974,14 @@ def test_downloads_thr_summary_agrees_with_the_results_page():
         results_mean = EXPECTED_PANELS[(scenario, "oilfield")]["THR (MMBOE)"][3]
         assert exported_mean / 1e6 == approx_displayed(results_mean)
 
-        # The column the page found really is the one holding raw BOE.
-        headers = [element.value for element in at.get("subheader")]
-        assert "THR Summary (Total_Hydrocarbon_Resource_BOE)" in headers
+        # The column the page found really is the one holding raw BOE. The
+        # heading is a numbered markdown heading rather than a subheader since
+        # the section numbering landed, so the column name is read from there.
+        headings = [element.value for element in at.markdown]
+        assert any(
+            "THR summary (Total_Hydrocarbon_Resource_BOE)" in heading
+            for heading in headings
+        ), f"column name not in any heading: {[h for h in headings if 'THR' in h]}"
 
 
 # ==========================================================================

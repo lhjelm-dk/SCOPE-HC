@@ -1,5 +1,6 @@
 import streamlit as st
 
+from scopehc.ui import numbered
 from scopehc.config import PALETTE, WORKFLOW_RIBBON
 
 
@@ -91,7 +92,7 @@ def main() -> None:
         )
 
     # Workflow Diagram (moved out of expander)
-    st.markdown("### Estimation Workflow")
+    numbered.heading("overview.workflow")
     
     colors = [
         "#CAEDFE",  # Box 1 - lightest gray
@@ -238,6 +239,7 @@ def main() -> None:
         )
         
         st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
+        numbered.figure_caption("overview.workflow.fig")
 
     with st.expander("Assumptions and formulas", expanded=False):
         st.markdown(

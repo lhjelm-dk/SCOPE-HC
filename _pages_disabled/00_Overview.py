@@ -62,7 +62,7 @@ def main() -> None:
                - **Bg** (rb/scf): Gas formation volume factor (gas expansion reservoir → surface)
                - **1/Bo** (STB/rb): Inverse oil formation volume factor (oil shrinkage reservoir → surface)
                - **GOR** (scf/STB): Gas-Oil Ratio (associated gas per barrel of oil)
-               - **CGR** (STB/MMscf): Condensate-Gas Ratio (condensate per million standard cubic feet of gas)
+               - **CY** (STB/MMscf): Condensate Yield, also called condensate-gas ratio (condensate per million standard cubic feet of gas)
                - **Recovery Factors (RFs)**: Fractions applied to in-situ volumes for oil, gas, and condensate (0–1)
                Use the Fluid Property Estimator tool (Standing/Vasquez–Beggs) for guidance on typical values.
 
@@ -85,7 +85,7 @@ def main() -> None:
             - **Oil in place**: $N = PV_{oil}/B_o$  **Gas in place**: $G = PV_{gas}/B_g$ 
             - **Recoverable**: Oil = $N \\times RF_{oil}$; Free gas = $G \\times RF_{gas}$ 
             - **Associated gas**: $\\text{Gas}_{assoc} = \\text{Oil}_{STB} \\times GOR$ 
-            - **Condensate**: $\\text{Cond}_{STB} = \\text{Gas}_{free} \\times CGR/10^6 \\times RF_{cond}$ 
+            - **Condensate**: $\\text{Cond}_{STB} = \\text{Gas}_{free} \\times CY/10^6 \\times RF_{cond}$ 
             - **THR (BOE)**: $THR = Oil + Cond + \\frac{\\text{Gas}_{total}}{\\text{scf/BOE}}$
             """
         )
@@ -116,7 +116,7 @@ def main() -> None:
                  shape="box", style="rounded,filled", fillcolor=colors[2])
         dot.node("ROCK", "NtG, Porosity & Saturation\n(reservoir properties)",
                  shape="box", style="rounded,filled", fillcolor=colors[3])
-        dot.node("FLUID", "Fluids & Recovery\n(Bg, 1/Bo, GOR, CGR, RFs)",
+        dot.node("FLUID", "Fluids & Recovery\n(Bg, 1/Bo, GOR, CY, RFs)",
                  shape="box", style="rounded,filled", fillcolor=colors[4])
         dot.node("DEP", "Dependencies (opt.)\n(correlations)",
                  shape="box", style="rounded,filled", fillcolor=colors[5])
@@ -146,7 +146,7 @@ def main() -> None:
             {"id": "GRV", "label": "Gross Rock Volume (GRV)<br>(choose calculation method)", "x": 1, "color": colors[1]},
             {"id": "FILL", "label": "HC Fill & Contacts<br>(Spill, HC, optional GOC)", "x": 2, "color": colors[2]},
             {"id": "ROCK", "label": "NtG, Porosity & Saturation<br>(reservoir properties)", "x": 3, "color": colors[3]},
-            {"id": "FLUID", "label": "Fluids & Recovery<br>(Bg, 1/Bo, GOR, CGR, RFs)", "x": 4, "color": colors[4]},
+            {"id": "FLUID", "label": "Fluids & Recovery<br>(Bg, 1/Bo, GOR, CY, RFs)", "x": 4, "color": colors[4]},
             {"id": "DEP", "label": "Dependencies (opt.)<br>(correlations)", "x": 5, "color": colors[5]},
             {"id": "RES", "label": "Results & THR<br>(in-place, recoverable, BOE)", "x": 6, "color": colors[6]},
             {"id": "SENS", "label": "Check Sensitivity<br>(tornado plots)", "x": 7, "color": colors[7]},
@@ -282,7 +282,7 @@ def main() -> None:
             • Oil_STB = PVₒᵢₗ × 6.2898 × RFₒᵢₗ × (1/Bo)  
             • Gas_scf = PV_gas × 6.2898 × RF_gas / Bg  
             • Associated gas = Oil_STB × GOR  
-            • Condensate = Gas_free × CGR / 10⁶ × RF_cond
+            • Condensate = Gas_free × CY / 10⁶ × RF_cond
 
             ### **Formation Volume Factors (FVF)**
 
@@ -297,7 +297,7 @@ def main() -> None:
 
             ### **Reporting Units**
 
-            Inputs: Area (km²), Thickness (m), Depths (m), Bg (rb/scf), 1/Bo (STB/rb), GOR (scf/STB), CGR (STB/MMscf)  
+            Inputs: Area (km²), Thickness (m), Depths (m), Bg (rb/scf), 1/Bo (STB/rb), GOR (scf/STB), CY (STB/MMscf)  
             Outputs: Oil (MMSTB or Mm³), Gas (Bscf or Bm³), Condensate (MMSTB or Mm³), THR (MBOE or Mm³ BOE)
             """
         )

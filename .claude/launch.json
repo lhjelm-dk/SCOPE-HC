@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "scope-hc",
+      "runtimeExecutable": "C:/Users/lhjel/anaconda3/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "streamlit",
+        "run",
+        "streamlit_app.py",
+        "--server.port",
+        "8540",
+        "--server.headless",
+        "true",
+        "--browser.gatherUsageStats",
+        "false"
+      ],
+      "port": 8540
+    }
+  ]
+}

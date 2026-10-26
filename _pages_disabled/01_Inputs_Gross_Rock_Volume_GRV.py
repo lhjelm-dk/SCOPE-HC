@@ -6,13 +6,14 @@ import streamlit as st
 
 # st.set_page_config is called in streamlit_app.py
 
+from scopehc.ui import numbered
 from scopehc.ui.inputs_grv import render_grv
 
 
 def main() -> None:
     st.session_state["current_page"] = "_pages_disabled/01_Inputs_Gross_Rock_Volume_GRV.py"
 
-    st.header("Gross Rock Volume (GRV)")
+    numbered.heading("inputs.grv")
 
     defaults = {
         "A": {"dist": "PERT", "min": 105.0, "mode": 210.0, "max": 273.0},

@@ -4,6 +4,8 @@ from pathlib import Path
 
 import streamlit as st
 
+from . import numbered
+
 # Navigation and theme are handled in streamlit_app.py
 
 
@@ -11,7 +13,7 @@ def render() -> None:
     """Render the math appendix page."""
     st.session_state["current_page"] = "_pages_disabled/07_Help_Math.py"
 
-    st.header("Help & Math Appendix")
+    numbered.heading("help")
     md = Path(__file__).resolve().parents[2] / "README.md"
     try:
         txt = md.read_text(encoding="utf-8")

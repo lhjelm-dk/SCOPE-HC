@@ -12,9 +12,9 @@ import streamlit as st
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.io as pio
-import matplotlib.pyplot as plt
 from scipy.stats import skew, norm, beta
 
+from scopehc import numbering
 from scopehc.config import (
     RB_PER_M3,
     RCF_PER_RB,
@@ -183,8 +183,6 @@ def init_theme() -> None:
     global _THEME_INITIALIZED
     if _THEME_INITIALIZED:
         return
-
-    plt.style.use("seaborn-v0_8-colorblind")
 
     pio.templates["scopehc_theme"] = pio.templates["plotly_white"]
     pio.templates["scopehc_theme"]["layout"]["colorway"] = [
@@ -623,27 +621,30 @@ def render_custom_navigation() -> None:
     except Exception:
         current_page = DEFAULT_PAGE
     
-    # Navigation items - using _pages_disabled to prevent Streamlit auto-detection
+    # Navigation items - using _pages_disabled to prevent Streamlit auto-detection.
+    # "section" is the key in scopehc/numbering.py; the number shown comes from
+    # there, so the nav cannot drift out of step with the headings on the pages.
     nav_items = [
-        {"title": "Overview", "page": DEFAULT_PAGE, "indent": False},
-        {"title": "Inputs (Main - all sections)", "page": "_pages_disabled/01_Inputs.py", "indent": False},
-        {"title": "Gross Rock Volume (GRV)", "page": "_pages_disabled/01_Inputs_Gross_Rock_Volume_GRV.py", "indent": True},
-        {"title": "Net to Gross (NtG)", "page": "_pages_disabled/01_Inputs_Net_to_Gross_NtG.py", "indent": True},
-        {"title": "Porosity", "page": "_pages_disabled/01_Inputs_Porosity.py", "indent": True},
-        {"title": "Saturation", "page": "_pages_disabled/01_Inputs_Saturation.py", "indent": True},
-        {"title": "Fluids", "page": "_pages_disabled/01_Inputs_Fluids.py", "indent": True},
-        {"title": "Recovery Factor", "page": "_pages_disabled/01_Inputs_Recovery.py", "indent": True},
-        {"title": "Dependencies", "page": "_pages_disabled/02_Dependencies.py", "indent": False},
-        {"title": "Run Simulation", "page": "_pages_disabled/03_Run_Simulation.py", "indent": False},
-        {"title": "Results", "page": "_pages_disabled/04_Results.py", "indent": False},
-        {"title": "Sensitivity", "page": "_pages_disabled/05_Sensitivity.py", "indent": False},
-        {"title": "Downloads", "page": "_pages_disabled/06_Downloads.py", "indent": False},
-        {"title": "Help & Math", "page": "_pages_disabled/07_Help_Math.py", "indent": False},
+        {"section": "overview", "title": "Overview", "page": DEFAULT_PAGE, "indent": False},
+        {"section": "inputs", "title": "Inputs (Main - all sections)", "page": "_pages_disabled/01_Inputs.py", "indent": False},
+        {"section": "inputs.grv", "title": "Gross Rock Volume (GRV)", "page": "_pages_disabled/01_Inputs_Gross_Rock_Volume_GRV.py", "indent": True},
+        {"section": "inputs.ntg", "title": "Net to Gross (NtG)", "page": "_pages_disabled/01_Inputs_Net_to_Gross_NtG.py", "indent": True},
+        {"section": "inputs.por", "title": "Porosity", "page": "_pages_disabled/01_Inputs_Porosity.py", "indent": True},
+        {"section": "inputs.sat", "title": "Saturation", "page": "_pages_disabled/01_Inputs_Saturation.py", "indent": True},
+        {"section": "inputs.fluids", "title": "Fluids", "page": "_pages_disabled/01_Inputs_Fluids.py", "indent": True},
+        {"section": "inputs.rf", "title": "Recovery Factor", "page": "_pages_disabled/01_Inputs_Recovery.py", "indent": True},
+        {"section": "dependencies", "title": "Dependencies", "page": "_pages_disabled/02_Dependencies.py", "indent": False},
+        {"section": "run", "title": "Run Simulation", "page": "_pages_disabled/03_Run_Simulation.py", "indent": False},
+        {"section": "results", "title": "Results", "page": "_pages_disabled/04_Results.py", "indent": False},
+        {"section": "sensitivity", "title": "Sensitivity", "page": "_pages_disabled/05_Sensitivity.py", "indent": False},
+        {"section": "downloads", "title": "Downloads", "page": "_pages_disabled/06_Downloads.py", "indent": False},
+        {"section": "help", "title": "Help & Math", "page": "_pages_disabled/07_Help_Math.py", "indent": False},
     ]
     
     # Create navigation using buttons with proper indentation
     for item in nav_items:
-        display_title = f" - {item['title']}" if item['indent'] else item['title']
+        numbered = f"{numbering.number(item['section'])} {item['title']}"
+        display_title = f" - {numbered}" if item['indent'] else numbered
         
         # Check if this is the current page
         is_active = current_page == item['page']
@@ -979,47 +980,6 @@ def render_sidebar_settings() -> None:
         """,
         unsafe_allow_html=True,
     )
-
-
-def render_sidebar_help() -> None:
-    """Render quick reference help and legend content in the sidebar."""
-    with st.sidebar.expander("ℹ️ Help & Glossary", expanded=False):
-        st.markdown("**Quick start**")
-        st.caption(HELP["quick_start"])
-
-        st.markdown("---")
-        st.markdown("**GRV methods**")
-        st.caption(HELP["grv_method"])
-        st.caption(f"• {HELP['spill_point']}")
-        st.caption(f"• {HELP['eff_hc_depth']}")
-        st.caption(f"• {HELP['goc']}")
-
-        st.markdown("---")
-        st.markdown("**Fluids & PVT**")
-        st.caption(f"• {HELP['bg']}")
-        st.caption(f"• {HELP['invbo']}")
-        st.caption(f"• {HELP['gor']}")
-        st.caption(f"• {HELP['cgr']}")
-
-        st.markdown("---")
-        st.markdown("**Recovery & Simulation**")
-        st.caption(f"• {HELP['rf_oil']}")
-        st.caption(f"• {HELP['rf_gas']}")
-        st.caption(f"• {HELP['trials']}")
-        st.caption(f"• {HELP['seed']}")
-
-        st.markdown("---")
-        st.markdown("**Charts**")
-        st.caption(HELP["charts"])
-
-        st.markdown("---")
-        st.markdown("**Units quick reference**")
-        st.code(
-            "Bg: rb/scf\n1/Bg: scf/rcf\n1/Bo: STB/rb\nGOR: scf/STB\nCGR: STB/MMscf\nGRV/PV: m³\nBOE factor: scf/BOE",
-            language="text",
-        )
-
-    render_color_legend()
 
 
 def get_unit_help_text(unit_system: str) -> str:

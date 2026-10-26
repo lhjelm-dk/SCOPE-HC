@@ -5,10 +5,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from . import numbered
 from scopehc.compute import compute_results, resolve_grv_split
 from scopehc.utils import validate_rf_fractions
 
 from .explorer import render_crossplot_section
+from .render_cache import fingerprint, memo
 
 from .common import (
     init_theme,
@@ -21,17 +23,168 @@ from .common import (
     get_unit_system,
     render_custom_navigation,
     render_sidebar_settings,
-    render_sidebar_help,
     PALETTE,
     collect_all_inputs_from_session,
     compute_input_hash,
 )
 
 
+# --------------------------------------------------------------------------------
+# Memoised pieces of this page.
+#
+# Everything below is a thin wrapper that names its inputs in a cache key and
+# then builds exactly what the uncached code built. The volumes themselves are
+# NOT cached: compute_results is 0.2% of a 10,000-trial render and 1% at 50,000,
+# so caching it would buy nothing while putting the reported figures at risk.
+# What is cached is the Plotly construction and the percentile statistics, which
+# together are most of the page. See scopehc/ui/render_cache.py for the contract
+# - in particular that a cached object must not be mutated afterwards.
+# --------------------------------------------------------------------------------
+
+
+def _hist_cdf_figure(arr, title: str, xaxis_title: str, color_type: str) -> go.Figure:
+    """``make_hist_cdf_figure``, keyed on the plotted values and the convention.
+
+    The convention has to be in the key: it reverses the CDF trace and swaps the
+    P10 and P90 lines without changing a single value in ``arr``.
+    """
+    use_exceedance = bool(st.session_state.get("percentile_exceedance", True))
+    key = fingerprint("hist_cdf", arr, title, xaxis_title, color_type, use_exceedance)
+    return memo(key, lambda: make_hist_cdf_figure(arr, title, xaxis_title, color_type))
+
+
+def _summary_table(arr, decimals: int) -> pd.DataFrame:
+    """``summary_table``, keyed on the values, the rounding and the convention.
+
+    The convention decides both the percentile values and the column order.
+    """
+    use_exceedance = bool(st.session_state.get("percentile_exceedance", True))
+    key = fingerprint("summary_table", arr, decimals, use_exceedance)
+    return memo(key, lambda: summary_table(arr, decimals=decimals))
+
+
+def _summarize(arr) -> dict:
+    """``summarize_array``, keyed on the values and the convention."""
+    use_exceedance = bool(st.session_state.get("percentile_exceedance", True))
+    key = fingerprint("summarize", arr, use_exceedance)
+    return memo(key, lambda: summarize_array(arr))
+
+
+def _thr_figure(thr_display, thr_unit: str, thr_stats: dict) -> go.Figure:
+    """The THR histogram together with its P10/P50/P90 lines.
+
+    The vertical lines are added inside the builder on purpose. They used to be
+    added by the caller to the figure that ``make_hist_cdf_figure`` returned,
+    which would be a mutation of a cached object: every rerun would have hung
+    another three lines on the same figure.
+    """
+    use_exceedance = bool(st.session_state.get("percentile_exceedance", True))
+    labels = ("P10", "P50", "P90")
+    key = fingerprint(
+        "thr_fig",
+        thr_display,
+        thr_unit,
+        use_exceedance,
+        [thr_stats.get(label) for label in labels] if thr_stats else None,
+    )
+
+    def build() -> go.Figure:
+        fig = make_hist_cdf_figure(
+            thr_display,
+            "Total Hydrocarbon Resource (THR) Distribution",
+            f"THR ({thr_unit})",
+            "result",
+        )
+        if thr_stats:
+            thr_color = color_for("Total_surface_BOE")
+            for label in labels:
+                value = thr_stats[label]
+                fig.add_vline(
+                    x=value,
+                    line_dash="dash",
+                    line_color=thr_color,
+                    annotation_text=f"{label}: {value:.1f} {thr_unit}",
+                    annotation_position="top",
+                )
+        return fig
+
+    return memo(key, build)
+
+
+def _boe_violin_figure(
+    oil_boe_display,
+    gas_free_boe_display,
+    gas_assoc_boe_display,
+    cond_boe_display,
+    boe_unit: str,
+) -> go.Figure:
+    """The four-fluid BOE violin plot, keyed on its four arrays and their unit."""
+    key = fingerprint(
+        "boe_violin",
+        oil_boe_display,
+        gas_free_boe_display,
+        gas_assoc_boe_display,
+        cond_boe_display,
+        boe_unit,
+    )
+
+    def build() -> go.Figure:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Violin(
+                y=oil_boe_display,
+                name=f"Oil ({boe_unit})",
+                box_visible=True,
+                line_color=color_for("Oil_STB_rec"),
+                fillcolor=color_for("Oil_STB_rec"),
+                opacity=0.6,
+            )
+        )
+        fig.add_trace(
+            go.Violin(
+                y=gas_free_boe_display,
+                name=f"Free Gas ({boe_unit})",
+                box_visible=True,
+                line_color=color_for("Gas_free_scf_rec"),
+                fillcolor=color_for("Gas_free_scf_rec"),
+                opacity=0.6,
+            )
+        )
+        fig.add_trace(
+            go.Violin(
+                y=gas_assoc_boe_display,
+                name=f"Associated Gas ({boe_unit})",
+                box_visible=True,
+                line_color=color_for("Gas_assoc_scf_rec"),
+                fillcolor=color_for("Gas_assoc_scf_rec"),
+                opacity=0.6,
+            )
+        )
+        fig.add_trace(
+            go.Violin(
+                y=cond_boe_display,
+                name=f"Condensate ({boe_unit})",
+                box_visible=True,
+                line_color=color_for("Cond_STB_rec"),
+                fillcolor=color_for("Cond_STB_rec"),
+                opacity=0.6,
+            )
+        )
+        fig.update_layout(
+            title="Hydrocarbon Volume Distribution Analysis (All Fluids in BOE)",
+            yaxis_title=f"Volume ({boe_unit})",
+            height=500,
+            showlegend=True,
+        )
+        return fig
+
+    return memo(key, build)
+
+
 def render() -> None:
     """Render the full results experience migrated from the legacy app."""
     st.session_state["current_page"] = "_pages_disabled/04_Results.py"
-    st.header("Results")
+    numbered.heading("results")
 
     unit_system = get_unit_system()
     gas_scf_per_boe = float(st.session_state.get("gas_scf_per_boe", 6000.0))
@@ -221,16 +374,18 @@ def render() -> None:
         cond_unit = "Mm³"
 
     st.markdown("---")
-    st.markdown("## In-place Volumes (STOIIP / GIIP)")
+    numbered.heading("results.inplace")
 
+    # The section key travels with the loop item: one call site, two figures.
     insitu_results = [
-        ("Oil in Place (STOIIP)", STOIIP_display, stoiip_unit, 2),
-        ("Gas in Place (GIIP)", GIIP_display, giip_unit, 2),
+        ("results.inplace.stoiip", "Oil in Place (STOIIP)", STOIIP_display, stoiip_unit, 2),
+        ("results.inplace.giip", "Gas in Place (GIIP)", GIIP_display, giip_unit, 2),
     ]
 
-    for title, arr, unit, decimals in insitu_results:
+    for section, title, arr, unit, decimals in insitu_results:
+        numbered.heading(section)
         st.plotly_chart(
-            make_hist_cdf_figure(arr, title, f"{title} ({unit})", "result"),
+            _hist_cdf_figure(arr, title, f"{title} ({unit})", "result"),
             width="stretch",
         )
         # Get convention-aware interpretation
@@ -241,21 +396,24 @@ def render() -> None:
             interp_text = "_Interpretation:_ P10/P50/P90 use non-exceedance convention (P10=conservative, P90=optimistic). "
         interp_text += "Wider histograms indicate larger uncertainty from GRV and petrophysical spread."
         st.caption(interp_text)
-        st.dataframe(summary_table(arr, decimals=decimals), width="stretch")
+        numbered.figure_caption(f"{section}.fig")
+        st.dataframe(_summary_table(arr, decimals), width="stretch")
+        numbered.table_caption(f"{section}.tab")
 
     st.markdown("---")
-    st.markdown("## Recoverable Volumes")
+    numbered.heading("results.recoverable")
 
     recoverable_results = [
-        ("Recoverable Oil", Oil_display, oil_unit, 2),
-        ("Recoverable Free Gas", FreeGas_display, gas_unit, 2),
-        ("Recoverable Associated Gas", AssocGas_display, gas_unit, 2),
-        ("Recoverable Condensate", Cond_display, cond_unit, 1),
+        ("results.recoverable.oil", "Recoverable Oil", Oil_display, oil_unit, 2),
+        ("results.recoverable.freegas", "Recoverable Free Gas", FreeGas_display, gas_unit, 2),
+        ("results.recoverable.assocgas", "Recoverable Associated Gas", AssocGas_display, gas_unit, 2),
+        ("results.recoverable.condensate", "Recoverable Condensate", Cond_display, cond_unit, 1),
     ]
 
-    for title, arr, unit, decimals in recoverable_results:
+    for section, title, arr, unit, decimals in recoverable_results:
+        numbered.heading(section)
         st.plotly_chart(
-            make_hist_cdf_figure(arr, title, f"{title} ({unit})", "result"),
+            _hist_cdf_figure(arr, title, f"{title} ({unit})", "result"),
             width="stretch",
         )
         # Get convention-aware interpretation
@@ -266,10 +424,12 @@ def render() -> None:
             interp_text = "_Interpretation:_ P10/P50/P90 use non-exceedance convention (P10=conservative, P90=optimistic). "
         interp_text += "Wider histograms indicate larger uncertainty from GRV and petrophysical spread. CDF shows cumulative probability."
         st.caption(interp_text)
-        st.dataframe(summary_table(arr, decimals=decimals), width="stretch")
+        numbered.figure_caption(f"{section}.fig")
+        st.dataframe(_summary_table(arr, decimals), width="stretch")
+        numbered.table_caption(f"{section}.tab")
 
     st.markdown("---")
-    st.markdown("## Recoverable (Surface) Volumes")
+    numbered.heading("results.surface")
     st.markdown("**Key percentiles for recoverable volumes:**")
 
     # Create a comprehensive table with all statistics
@@ -278,12 +438,12 @@ def render() -> None:
         return f"{value:,.{decimals}f}"
 
     # Collect all statistics
-    oil_stats = summarize_array(Oil_display)
-    free_gas_stats = summarize_array(FreeGas_display)
-    assoc_gas_stats = summarize_array(AssocGas_display)
-    condensate_stats = summarize_array(Cond_display)
+    oil_stats = _summarize(Oil_display)
+    free_gas_stats = _summarize(FreeGas_display)
+    assoc_gas_stats = _summarize(AssocGas_display)
+    condensate_stats = _summarize(Cond_display)
     total_liquids_display = Oil_display + Cond_display
-    total_liquids_stats = summarize_array(total_liquids_display)
+    total_liquids_stats = _summarize(total_liquids_display)
 
     # Build table data with consistent columns
     table_data = []
@@ -400,9 +560,10 @@ def render() -> None:
         ])
         
         st.dataframe(styled_df, width="stretch", hide_index=True)
+        numbered.table_caption("results.surface.tab")
 
     st.markdown("---")
-    st.markdown("## Total Hydrocarbon Resource (THR)")
+    numbered.heading("results.thr")
 
     if unit_system == "oilfield":
         thr_display = thr_boe / 1e6
@@ -411,7 +572,7 @@ def render() -> None:
         thr_display = thr_boe * UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
         thr_unit = "Mm³ BOE"
 
-    thr_stats = summarize_array(thr_display)
+    thr_stats = _summarize(thr_display)
     if thr_stats:
         # Create table format matching the Recoverable Volumes table
         thr_table_data = [{
@@ -485,6 +646,7 @@ def render() -> None:
         ])
         
         st.dataframe(styled_thr_df, width="stretch", hide_index=True)
+        numbered.table_caption("results.thr.tab")
 
     st.markdown("**THR Composition (mean):**")
     mean_oil_boe = np.mean(Oil_BOE) / 1e6
@@ -518,8 +680,9 @@ def render() -> None:
             }
         )
         st.dataframe(composition, width="stretch", hide_index=True)
+        numbered.table_caption("results.thr.composition")
 
-    st.markdown("### Hydrocarbon Volume Distribution Analysis (BOE)")
+    numbered.heading("results.boe")
     if unit_system == "oilfield":
         oil_boe_display = Oil_BOE / 1e6
         cond_boe_display = Cond_BOE / 1e6
@@ -534,78 +697,24 @@ def render() -> None:
         gas_assoc_boe_display = Gas_assoc_BOE * conversion
         boe_unit = "Mm³ BOE"
 
-    fig_violin = go.Figure()
-    fig_violin.add_trace(
-        go.Violin(
-            y=oil_boe_display,
-            name=f"Oil ({boe_unit})",
-            box_visible=True,
-            line_color=color_for("Oil_STB_rec"),
-            fillcolor=color_for("Oil_STB_rec"),
-            opacity=0.6,
-        )
-    )
-    fig_violin.add_trace(
-        go.Violin(
-            y=gas_free_boe_display,
-            name=f"Free Gas ({boe_unit})",
-            box_visible=True,
-            line_color=color_for("Gas_free_scf_rec"),
-            fillcolor=color_for("Gas_free_scf_rec"),
-            opacity=0.6,
-        )
-    )
-    fig_violin.add_trace(
-        go.Violin(
-            y=gas_assoc_boe_display,
-            name=f"Associated Gas ({boe_unit})",
-            box_visible=True,
-            line_color=color_for("Gas_assoc_scf_rec"),
-            fillcolor=color_for("Gas_assoc_scf_rec"),
-            opacity=0.6,
-        )
-    )
-    fig_violin.add_trace(
-        go.Violin(
-            y=cond_boe_display,
-            name=f"Condensate ({boe_unit})",
-            box_visible=True,
-            line_color=color_for("Cond_STB_rec"),
-            fillcolor=color_for("Cond_STB_rec"),
-            opacity=0.6,
-        )
-    )
-    fig_violin.update_layout(
-        title="Hydrocarbon Volume Distribution Analysis (All Fluids in BOE)",
-        yaxis_title=f"Volume ({boe_unit})",
-        height=500,
-        showlegend=True,
+    fig_violin = _boe_violin_figure(
+        oil_boe_display,
+        gas_free_boe_display,
+        gas_assoc_boe_display,
+        cond_boe_display,
+        boe_unit,
     )
     st.plotly_chart(fig_violin, width="stretch")
+    numbered.figure_caption("results.boe.fig")
     st.caption(
         f"All volumes are shown in BOE units for direct comparison. "
         f"Gas conversion: {gas_scf_per_boe:,.0f} scf/BOE"
     )
 
     with st.expander("**Total Hydrocarbon Resource (THR)**", expanded=True):
-        fig_thr = make_hist_cdf_figure(
-            thr_display,
-            "Total Hydrocarbon Resource (THR) Distribution",
-            f"THR ({thr_unit})",
-            "result",
-        )
-        if thr_stats:
-            thr_color = color_for("Total_surface_BOE")
-            for label in ("P10", "P50", "P90"):
-                value = thr_stats[label]
-                fig_thr.add_vline(
-                    x=value,
-                    line_dash="dash",
-                    line_color=thr_color,
-                    annotation_text=f"{label}: {value:.1f} {thr_unit}",
-                    annotation_position="top",
-                )
+        fig_thr = _thr_figure(thr_display, thr_unit, thr_stats)
         st.plotly_chart(fig_thr, width="stretch")
+        numbered.figure_caption("results.boe.thr_fig")
         # Get convention-aware interpretation
         use_exceedance = st.session_state.get("percentile_exceedance", True)
         if use_exceedance:
@@ -616,7 +725,8 @@ def render() -> None:
             interp_text += "P10/P50/P90 use non-exceedance convention (P10=conservative, P90=optimistic). "
         interp_text += "Wider distributions indicate greater uncertainty in volume estimates."
         st.caption(interp_text)
-        st.dataframe(summary_table(thr_display, decimals=2), width="stretch")
+        st.dataframe(_summary_table(thr_display, 2), width="stretch")
+        numbered.table_caption("results.boe.thr_tab")
         st.caption(
             f"THR includes Oil + Condensate + Gas/BOE. Default 6.0 Mscf/BOE; configurable per company standard. "
             f"Current factor: {gas_scf_per_boe:,.0f} scf/BOE"
@@ -671,6 +781,7 @@ def render() -> None:
         }
         summary_df = pd.DataFrame(summary_data)
         st.dataframe(summary_df, width="stretch", hide_index=True)
+        numbered.table_caption("results.boe.thr_breakdown")
 
     st.markdown("---")
     _render_column_distributions_overlay()
@@ -688,37 +799,47 @@ def _render_column_distributions_overlay() -> None:
     if oil is None and gas is None:
         return
 
-    st.subheader("Oil and Gas Column Distributions")
-    fig = go.Figure()
-    bins = 100
+    numbered.heading("results.columns")
+    oil_arr = None if oil is None else np.asarray(oil, dtype=float)
+    gas_arr = None if gas is None else np.asarray(gas, dtype=float)
 
-    if gas is not None:
-        fig.add_histogram(
-            x=np.asarray(gas, dtype=float),
-            nbinsx=bins,
-            name="Gas Column",
-            marker=dict(color=color_for("Gas_Column_Height")),
-            opacity=0.55,
-        )
-    if oil is not None:
-        fig.add_histogram(
-            x=np.asarray(oil, dtype=float),
-            nbinsx=bins,
-            name="Oil Column",
-            marker=dict(color=color_for("Oil_Column_Height")),
-            opacity=0.55,
-        )
-    fig.update_layout(barmode="overlay", height=420, margin=dict(l=40, r=30, t=30, b=60))
-    fig.update_xaxes(title_text="Column Height (m)")
-    fig.update_yaxes(title_text="Frequency")
-    st.plotly_chart(fig, width="stretch")
+    def build() -> go.Figure:
+        fig = go.Figure()
+        bins = 100
+
+        if gas_arr is not None:
+            fig.add_histogram(
+                x=gas_arr,
+                nbinsx=bins,
+                name="Gas Column",
+                marker=dict(color=color_for("Gas_Column_Height")),
+                opacity=0.55,
+            )
+        if oil_arr is not None:
+            fig.add_histogram(
+                x=oil_arr,
+                nbinsx=bins,
+                name="Oil Column",
+                marker=dict(color=color_for("Oil_Column_Height")),
+                opacity=0.55,
+            )
+        fig.update_layout(barmode="overlay", height=420, margin=dict(l=40, r=30, t=30, b=60))
+        fig.update_xaxes(title_text="Column Height (m)")
+        fig.update_yaxes(title_text="Frequency")
+        return fig
+
+    st.plotly_chart(
+        memo(fingerprint("column_overlay", gas_arr, oil_arr), build),
+        width="stretch",
+    )
+    numbered.figure_caption("results.columns.fig")
 
 
 def _render_saturation_summary() -> None:
     """Render saturation summary panel."""
     mode = st.session_state.get("sat_mode", "Global")
     
-    st.markdown("### Saturation Assumptions")
+    numbered.heading("results.saturation.assumptions")
     st.write(f"**Mode:** {mode}")
 
     so = st.session_state.get("Shc_oil")
@@ -744,6 +865,7 @@ def _hist(name: str, arr, title: str) -> None:
     fig.update_xaxes(title_text=title)
     fig.update_yaxes(title_text="Frequency")
     st.plotly_chart(fig, width="stretch")
+    numbered.figure_caption("results.saturation.assumptions.fig")
 
 
 def render_saturation_plots() -> None:
@@ -751,7 +873,7 @@ def render_saturation_plots() -> None:
     mode = st.session_state.get("sat_mode", "Global")
     use_sw_global = st.session_state.get("global_sat_use_sw", False)
     
-    st.subheader("Saturation Distributions")
+    numbered.heading("results.saturation.plots")
     
     if mode.startswith("Global"):
         if use_sw_global:

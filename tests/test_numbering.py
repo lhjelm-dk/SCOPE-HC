@@ -21,27 +21,38 @@ EXPECTED_SECTIONS = [
     ("2.0", "inputs", "Inputs"),
     ("2.1", "inputs.grv", "Gross Rock Volume (GRV)"),
     ("2.1.1", "inputs.grv.method", "GRV input method"),
-    ("2.1.2", "inputs.grv.atgcf", "Area, thickness and geometric correction"),
-    ("2.1.2.1", "inputs.grv.atgcf.calculator", "Geometric correction factor calculator"),
-    ("2.1.2.2", "inputs.grv.atgcf.sensitivity", "Sensitivity summary"),
-    ("2.1.2.3", "inputs.grv.atgcf.result", "Calculated GRV"),
-    ("2.1.3", "inputs.grv.deptharea", "Depth-area relationship"),
-    ("2.1.4", "inputs.grv.depths", "Depth distributions"),
-    ("2.1.4.1", "inputs.grv.depths.spill", "Spill point depth"),
-    ("2.1.4.2", "inputs.grv.depths.hc", "Effective hydrocarbon contact depth"),
-    ("2.1.4.3", "inputs.grv.depths.goc", "Gas-oil contact (GOC) definition"),
-    ("2.1.5", "inputs.grv.results", "GRV results by fluid type"),
-    ("2.1.5.1", "inputs.grv.results.oil", "Oil GRV"),
-    ("2.1.5.2", "inputs.grv.results.gas", "Gas GRV"),
-    ("2.1.5.3", "inputs.grv.results.total", "Total hydrocarbon GRV"),
-    ("2.1.5.4", "inputs.grv.results.summary", "Combined GRV summary"),
-    ("2.1.6", "inputs.grv.abovespill", "GRV distribution above spill point"),
-    ("2.1.7", "inputs.grv.columns", "Gas and oil column heights"),
-    ("2.1.7.1", "inputs.grv.columns.gas", "Gas column height"),
-    ("2.1.7.2", "inputs.grv.columns.oil", "Oil column height"),
-    ("2.1.7.3", "inputs.grv.columns.overlay", "Column heights overlay"),
-    ("2.1.8", "inputs.grv.split", "Oil and gas split by fraction"),
-    ("2.1.9", "inputs.grv.final", "Final GRV for calculations"),
+    ("2.1.2", "inputs.grv.direct", "Direct GRV"),
+    ("2.1.3", "inputs.grv.atgcf", "Area, thickness and geometric correction"),
+    ("2.1.3.1", "inputs.grv.atgcf.area", "Area"),
+    ("2.1.3.2", "inputs.grv.atgcf.thickness", "Reservoir thickness"),
+    ("2.1.3.3", "inputs.grv.atgcf.gcf", "Geometric correction factor"),
+    ("2.1.3.4", "inputs.grv.atgcf.gcf_mp", "GCF uncertainty multiplier"),
+    ("2.1.3.5", "inputs.grv.atgcf.calculator", "Geometric correction factor calculator"),
+    ("2.1.3.6", "inputs.grv.atgcf.sensitivity", "Sensitivity summary"),
+    ("2.1.3.7", "inputs.grv.atgcf.result", "Calculated GRV"),
+    ("2.1.4", "inputs.grv.deptharea", "Depth-area relationship"),
+    ("2.1.5", "inputs.grv.depths", "Depth distributions"),
+    ("2.1.5.1", "inputs.grv.depths.resthickness", "Reservoir thickness (top-only method)"),
+    ("2.1.5.2", "inputs.grv.depths.areamult", "Area uncertainty multiplier"),
+    ("2.1.5.3", "inputs.grv.depths.spill", "Spill point depth"),
+    ("2.1.5.4", "inputs.grv.depths.hc", "Effective hydrocarbon contact depth"),
+    ("2.1.5.5", "inputs.grv.depths.goc", "Gas-oil contact (GOC) definition"),
+    ("2.1.5.6", "inputs.grv.depths.foil", "Oil fraction of the hydrocarbon column"),
+    ("2.1.5.7", "inputs.grv.depths.hoil", "Oil column height"),
+    ("2.1.6", "inputs.grv.results", "GRV results by fluid type"),
+    ("2.1.6.1", "inputs.grv.results.oil", "Oil GRV"),
+    ("2.1.6.2", "inputs.grv.results.gas", "Gas GRV"),
+    ("2.1.6.3", "inputs.grv.results.total", "Total hydrocarbon GRV"),
+    ("2.1.6.4", "inputs.grv.results.summary", "Combined GRV summary"),
+    ("2.1.7", "inputs.grv.abovespill", "GRV distribution above spill point"),
+    ("2.1.8", "inputs.grv.columns", "Gas and oil column heights"),
+    ("2.1.8.1", "inputs.grv.columns.gas", "Gas column height"),
+    ("2.1.8.2", "inputs.grv.columns.oil", "Oil column height"),
+    ("2.1.8.3", "inputs.grv.columns.overlay", "Column heights overlay"),
+    ("2.1.9", "inputs.grv.split", "Oil and gas split by fraction"),
+    ("2.1.9.1", "inputs.grv.split.foil", "Oil fraction of total hydrocarbon GRV"),
+    ("2.1.10", "inputs.grv.final", "Final GRV for calculations"),
+    ("2.1.10.1", "inputs.grv.final.mp", "GRV uncertainty multiplier"),
     ("2.2", "inputs.ntg", "Net-to-Gross (NtG)"),
     ("2.2.1", "inputs.ntg.dist", "Net-to-gross distribution"),
     ("2.3", "inputs.por", "Porosity"),
@@ -55,9 +66,18 @@ EXPECTED_SECTIONS = [
     ("2.4.6", "inputs.sat.shc_gas", "Hydrocarbon saturation, gas phase"),
     ("2.5", "inputs.fluids", "Fluids & PVT"),
     ("2.5.1", "inputs.fluids.oil", "Oil properties"),
+    ("2.5.1.1", "inputs.fluids.oil.invbo", "Oil shrinkage factor (1/Bo)"),
     ("2.5.2", "inputs.fluids.gas", "Gas properties"),
+    ("2.5.2.1", "inputs.fluids.gas.invbg", "Gas expansion factor (1/Bg)"),
+    ("2.5.2.2", "inputs.fluids.gas.bg", "Gas expansion factor (Bg)"),
+    ("2.5.2.3", "inputs.fluids.gas.gor", "Gas-oil ratio (GOR)"),
     ("2.5.3", "inputs.fluids.cond", "Condensate properties"),
+    ("2.5.3.1", "inputs.fluids.cond.cy", "Condensate yield (CY)"),
     ("2.6", "inputs.rf", "Recovery factors"),
+    ("2.6.1", "inputs.rf.oil", "Oil recovery factor"),
+    ("2.6.2", "inputs.rf.gas", "Free gas recovery factor"),
+    ("2.6.3", "inputs.rf.assoc", "Associated gas recovery factor"),
+    ("2.6.4", "inputs.rf.cond", "Condensate recovery factor"),
     ("3.0", "dependencies", "Dependencies"),
     ("3.1", "dependencies.matrix", "Parameter dependencies and correlations"),
     ("3.2", "dependencies.crossplots", "Correlation cross-plots"),
@@ -133,8 +153,8 @@ def test_a_heading_title_can_be_overridden_without_moving_the_number():
 
 
 def test_items_hang_off_their_section_number():
-    assert nb.label("inputs.ntg.dist.hist") == "Figure 2.2.1-1"
-    assert nb.label("inputs.sat.sw_gas.hist") == "Figure 2.4.4-1"
+    assert nb.label("inputs.ntg.dist.fig") == "Figure 2.2.1-1"
+    assert nb.label("inputs.sat.sw_gas.fig") == "Figure 2.4.4-1"
 
 
 def test_figures_and_tables_count_separately():
@@ -161,11 +181,11 @@ def test_figures_and_tables_count_separately():
 
 
 def test_caption_joins_label_and_title():
-    assert nb.caption("inputs.por.dist.hist") == "Figure 2.3.1-1 — Porosity distribution"
+    assert nb.caption("inputs.por.dist.fig") == "Figure 2.3.1-1 — Porosity distribution"
 
 
 def test_caption_title_can_be_overridden():
-    assert nb.caption("inputs.por.dist.hist", "Porosity, P10–P90") == (
+    assert nb.caption("inputs.por.dist.fig", "Porosity, P10–P90") == (
         "Figure 2.3.1-1 — Porosity, P10–P90"
     )
 
@@ -177,7 +197,7 @@ def test_an_unknown_key_names_itself_and_where_to_fix_it():
     with pytest.raises(KeyError, match="unknown section key"):
         nb.number("inputs.nope")
     with pytest.raises(KeyError, match="unknown figure/table key"):
-        nb.label("inputs.nope.hist")
+        nb.label("inputs.nope.fig")
 
 
 def test_duplicate_section_keys_are_refused():

@@ -32,6 +32,7 @@ from scopehc.crossplot import (
 )
 
 from .common import color_for
+from .render_cache import fingerprint, memo
 
 # Above this many trials a scatter is a solid blob, so the density view leads instead.
 DENSITY_AUTO_THRESHOLD = 20_000
@@ -442,6 +443,61 @@ def _drivers_bar(ranked: pd.DataFrame, target: str, method_label: str) -> go.Fig
 
 
 # ---------------------------------------------------------------------------------
+# Memoised statistics
+#
+# The fragment below re-runs in full whenever the script does - a sidebar widget
+# re-runs the whole page, fragment or not - and the rank correlations are the
+# most expensive thing on the Results page at 50,000 trials: rank_drivers alone
+# measured 153 ms, with correlation_matrix at 49 ms, both of them inside an
+# expander that is collapsed by default. Each wrapper keys on the exact values
+# and options it passes through, so a different selection, method or data set
+# lands on a different key rather than invalidating an old one. The returned
+# frames are read-only to every caller here (`.rename`, `.to_csv`, `.head` and
+# construction of new frames from their columns all copy).
+# ---------------------------------------------------------------------------------
+
+
+def _cached_bin_statistics(x, y, bin_width: float, use_exceedance: bool) -> pd.DataFrame:
+    key = fingerprint("bin_stats", x, y, float(bin_width), use_exceedance)
+    return memo(
+        key, lambda: bin_statistics(x, y, bin_width, use_exceedance=use_exceedance)
+    )
+
+
+def _cached_pair_statistics(x, y) -> Dict[str, float]:
+    key = fingerprint("pair_stats", x, y)
+    return memo(key, lambda: pair_statistics(x, y))
+
+
+def _cached_correlation_matrix(
+    df: pd.DataFrame, columns: Sequence[str], method: str
+) -> pd.DataFrame:
+    # `columns` goes into the key in order, because it sets the row and column
+    # order of the result; only the columns actually present carry data.
+    present = [c for c in columns if c in df.columns]
+    key = fingerprint(
+        "corr_matrix", method, list(columns), present, df[present] if present else None
+    )
+    return memo(key, lambda: correlation_matrix(df, columns, method=method))
+
+
+def _cached_rank_drivers(
+    df: pd.DataFrame, target: str, columns: Sequence[str], method: str
+) -> pd.DataFrame:
+    present = [c for c in columns if c in df.columns]
+    needed = present + ([target] if target in df.columns else [])
+    key = fingerprint(
+        "rank_drivers",
+        method,
+        target,
+        list(columns),
+        needed,
+        df[needed] if needed else None,
+    )
+    return memo(key, lambda: rank_drivers(df, target, columns, method=method))
+
+
+# ---------------------------------------------------------------------------------
 # Section
 # ---------------------------------------------------------------------------------
 
@@ -644,7 +700,7 @@ def _section(res: Dict[str, Any], unit_system: str) -> None:
     use_exceedance = bool(st.session_state.get("percentile_exceedance", True))
     if bin_width and bin_width > 0:
         try:
-            bins = bin_statistics(x, y, bin_width, use_exceedance=use_exceedance)
+            bins = _cached_bin_statistics(x, y, bin_width, use_exceedance)
         except ValueError as exc:
             bin_error = str(exc)
     with b2:
@@ -684,7 +740,7 @@ def _section(res: Dict[str, Any], unit_system: str) -> None:
         )
 
     # --- pair statistics ---
-    stats = pair_statistics(x, y)
+    stats = _cached_pair_statistics(x, y)
     s1, s2, s3, s4, s5 = st.columns(5)
     s1.metric("Pearson r", _fmt(stats["pearson_r"]), help="Linear association, -1 to +1.")
     s2.metric(
@@ -813,7 +869,7 @@ def _section(res: Dict[str, Any], unit_system: str) -> None:
         if len(selected) < 2:
             st.info("Pick at least two variables.")
         else:
-            matrix = correlation_matrix(dff, selected, method=method)
+            matrix = _cached_correlation_matrix(dff, selected, method)
             if matrix.empty:
                 st.info("Not enough variation in the selected variables to correlate.")
             else:
@@ -828,7 +884,7 @@ def _section(res: Dict[str, Any], unit_system: str) -> None:
                     key="xplot_dl_matrix",
                 )
 
-                ranked = rank_drivers(dff, y_label, selected, method=method)
+                ranked = _cached_rank_drivers(dff, y_label, selected, method)
                 if not ranked.empty:
                     st.plotly_chart(
                         _drivers_bar(ranked, y_label, method_name), width="stretch"

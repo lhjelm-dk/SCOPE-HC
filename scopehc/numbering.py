@@ -87,7 +87,11 @@ def sec(
 
 SECTIONS: Tuple[Section, ...] = (
     sec("overview", "Overview", children=(
-        sec("overview.workflow", "Estimation workflow"),
+        sec(
+            "overview.workflow",
+            "Estimation workflow",
+            items=(fig("overview.workflow.fig", "Estimation workflow"),),
+        ),
         sec("overview.assumptions", "Assumptions and formulas"),
     )),
     sec("inputs", "Inputs", children=(
@@ -270,10 +274,21 @@ SECTIONS: Tuple[Section, ...] = (
     )),
     sec("dependencies", "Dependencies", children=(
         sec("dependencies.matrix", "Parameter dependencies and correlations"),
-        sec("dependencies.crossplots", "Correlation cross-plots"),
+        sec(
+            "dependencies.crossplots",
+            "Correlation cross-plots",
+            items=(fig("dependencies.crossplots.fig", "Correlated parameter cross-plots"),),
+        ),
     )),
     sec("run", "Run Simulation", children=(
-        sec("run.qc", "Input quality control"),
+        sec(
+            "run.qc",
+            "Input quality control",
+            items=(
+                tab("run.qc.core", "Core input parameters"),
+                tab("run.qc.settings", "Simulation settings"),
+            ),
+        ),
         sec("run.summary", "Simulation summary"),
         sec("run.inputs", "Input parameter summary"),
     )),
@@ -380,14 +395,50 @@ SECTIONS: Tuple[Section, ...] = (
         sec("results.crossplot", "Cross-plot and statistics"),
     )),
     sec("sensitivity", "Sensitivity", children=(
-        sec("sensitivity.thr", "Total hydrocarbon resource (THR)"),
-        sec("sensitivity.breakdown", "THR breakdown by fluid type"),
-        sec("sensitivity.tornado", "Tornado sensitivities"),
-        sec("sensitivity.summary", "Sensitivity summary (P10/P90 method)"),
+        sec(
+            "sensitivity.boe",
+            "Hydrocarbon volume distribution (BOE)",
+            items=(fig("sensitivity.boe.fig", "Hydrocarbon volumes, all fluids in BOE"),),
+        ),
+        # The breakdown is rendered inside the THR block, by _render_thr_breakdown.
+        sec(
+            "sensitivity.thr",
+            "Total hydrocarbon resource (THR)",
+            items=(
+                fig("sensitivity.thr.fig", "THR distribution"),
+                tab("sensitivity.thr.tab", "THR statistics"),
+                tab("sensitivity.thr.composition", "THR composition (mean)"),
+            ),
+            children=(
+                sec(
+                    "sensitivity.thr.breakdown",
+                    "THR breakdown by fluid type",
+                    items=(tab("sensitivity.thr.breakdown.tab", "THR breakdown by fluid type"),),
+                ),
+            ),
+        ),
+        sec(
+            "sensitivity.tornado",
+            "Tornado sensitivities",
+            items=(fig("sensitivity.tornado.fig", "Tornado sensitivity chart"),),
+        ),
+        sec(
+            "sensitivity.summary",
+            "Sensitivity summary (P10/P90 method)",
+            items=(tab("sensitivity.summary.tab", "Parameter impact on P10/P90"),),
+        ),
     )),
     sec("downloads", "Downloads & Exports", children=(
-        sec("downloads.preview", "Results preview"),
-        sec("downloads.thr", "THR summary"),
+        sec(
+            "downloads.preview",
+            "Results preview",
+            items=(tab("downloads.preview.tab", "First rows of the trial table"),),
+        ),
+        sec(
+            "downloads.thr",
+            "THR summary",
+            items=(tab("downloads.thr.tab", "THR summary statistics"),),
+        ),
         sec("downloads.options", "Export options"),
     )),
     sec("help", "Help & Math Appendix"),

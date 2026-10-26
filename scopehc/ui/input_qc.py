@@ -8,6 +8,7 @@ import numpy as np
 import streamlit as st
 import pandas as pd
 from typing import Dict, Any, List, Tuple
+from . import numbered
 from .common import summarize_array, get_unit_system
 
 
@@ -19,7 +20,7 @@ def render_input_qc_panel() -> Dict[str, Any]:
         Dictionary with QC status and input summary
     """
     st.markdown("---")
-    st.markdown("### 🔍 Input Quality Control (QC)")
+    numbered.heading("run.qc", "🔍 Input quality control (QC)")
     st.caption(
         "Review all input parameters and their values that will be used in the simulation. "
         "Verify that these match your intended inputs before running."
@@ -181,6 +182,7 @@ def render_input_qc_panel() -> Dict[str, Any]:
             "Percentile Convention": "P10 high (exceedance)" if st.session_state.get("percentile_exceedance", True) else "P10 low (non-exceedance)",
         }
         st.dataframe(pd.DataFrame(list(settings_data.items()), columns=["Setting", "Value"]), width="stretch")
+        numbered.table_caption("run.qc.core")
     
     # Warnings and Errors
     if qc_status["warnings"]:
@@ -228,6 +230,7 @@ def _render_parameter_table(title: str, params: List[Tuple[str, str, str, float,
     if rows:
         df = pd.DataFrame(rows)
         st.dataframe(df, width="stretch", hide_index=True)
+        numbered.table_caption("run.qc.settings")
     else:
         st.info(f"No data available for {title}")
 

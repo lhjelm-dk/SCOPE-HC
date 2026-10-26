@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import streamlit as st
 
+from . import numbered
 from .common import PALETTE, render_param, get_unit_system
 from .helpers import render_fluid_estimator
 
@@ -34,7 +35,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
     # For now, only direct distribution input is supported
     st.session_state["fluid_method"] = "Direct distribution input"
 
-    st.markdown("### Oil Properties")
+    numbered.heading("inputs.fluids.oil")
     invbo_unit = "STB/rb" if unit_system == "oilfield" else "m³/m³"
     invbo_help = (
         "Oil shrinkage factor (stock tank barrels per reservoir barrel). "
@@ -54,7 +55,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
         param_name="InvBo",
     )
 
-    st.markdown("### Gas Properties")
+    numbered.heading("inputs.fluids.gas")
     bg_input_method = st.radio(
         "Gas expansion input method:",
         ["Enter 1/Bg (scf/cf) - Industry standard", "Enter Bg (rb/scf) - Traditional"],
@@ -128,7 +129,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
         param_name="GOR",
     )
 
-    st.markdown("### Condensate Properties")
+    numbered.heading("inputs.fluids.cond")
     cy_unit = "STB/MMscf" if unit_system == "oilfield" else "m³/Mm³"
     cy_help = (
         "Condensate yield (stock tank barrels per million standard cubic feet of gas)"

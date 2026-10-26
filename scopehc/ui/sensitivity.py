@@ -103,6 +103,7 @@ def _render_violin_plots(
         showlegend=True,
     )
     st.plotly_chart(fig, width="stretch")
+    numbered.figure_caption("sensitivity.boe.fig")
     st.caption(
         f"All volumes are shown in BOE units for direct comparison. "
         f"Gas conversion: {gas_scf_per_boe:,.0f} scf/BOE"
@@ -156,8 +157,9 @@ def _render_thr_breakdown(
             }
         )
         st.dataframe(composition_data, width="stretch", hide_index=True)
+        numbered.table_caption("sensitivity.thr.composition")
 
-    st.markdown("#### THR Breakdown by Fluid Type (BOE)")
+    numbered.heading("sensitivity.thr.breakdown")
     if unit_system == "oilfield":
         conversion = 1e6
         boe_unit = "MMBOE"
@@ -211,6 +213,7 @@ def _render_thr_breakdown(
         }
     )
     st.dataframe(summary_df, width="stretch", hide_index=True)
+    numbered.table_caption("sensitivity.thr.breakdown.tab")
 
 
 def _create_tornado_plot(unit_system: str, target_volume: str, gas_scf_per_boe: float, results: dict = None):
@@ -754,7 +757,7 @@ def _render_sensitivity_summary(
     target_volume: str,
     unit_system: str,
 ) -> None:
-    st.markdown("### Sensitivity Summary (P10/P90 Method)")
+    numbered.heading("sensitivity.summary")
 
     if target_volume == "Oil":
         units = "MMSTB" if unit_system == "oilfield" else "Mm³"
@@ -785,6 +788,7 @@ def _render_sensitivity_summary(
     if rows:
         df = pd.DataFrame(rows)
         st.dataframe(df, width="stretch", hide_index=True)
+        numbered.table_caption("sensitivity.summary.tab")
     else:
         st.caption("No significant sensitivities for the selected volume.")
 
@@ -822,11 +826,11 @@ def render() -> None:
     Total_gas_BOE = np.asarray(results["Total_gas_BOE"], dtype=float)
     thr_boe = np.asarray(results["Total_surface_BOE"], dtype=float)
 
-    st.markdown("### Hydrocarbon Volume Distribution Analysis (BOE - comparable across all fluids)")
+    numbered.heading("sensitivity.boe", "Hydrocarbon volume distribution (BOE - comparable across all fluids)")
     _render_violin_plots(Oil_BOE, Gas_free_BOE, Gas_assoc_BOE, Cond_BOE, unit_system, gas_scf_per_boe)
 
     st.markdown("---")
-    st.markdown("## Total Hydrocarbon Resource (THR)")
+    numbered.heading("sensitivity.thr")
     if unit_system == "oilfield":
         thr_display = thr_boe / 1e6
         thr_unit = "MMBOE"
@@ -855,11 +859,13 @@ def render() -> None:
                     annotation_position="top",
                 )
         st.plotly_chart(fig_thr, width="stretch")
+        numbered.figure_caption("sensitivity.thr.fig")
         st.caption(
             "_Interpretation:_ THR represents total recoverable volumes converted to oil equivalent. "
             "Wider distributions indicate greater uncertainty."
         )
         st.dataframe(summary_table(thr_display, decimals=2), width="stretch")
+        numbered.table_caption("sensitivity.thr.tab")
         st.caption(
             f"THR includes Oil + Condensate + Gas/BOE. Default 6.0 Mscf/BOE; company standards may vary. "
             f"Current factor: {gas_scf_per_boe:,.0f} scf/BOE"
@@ -875,7 +881,7 @@ def render() -> None:
         )
 
     st.markdown("---")
-    st.markdown("## Tornado Sensitivities")
+    numbered.heading("sensitivity.tornado")
     target_volume = st.selectbox(
         "Select target volume for sensitivity analysis:",
         ["Oil", "Free Gas", "Associated Gas", "Condensate", "Total Hydrocarbon Resource (THR)"],
@@ -893,5 +899,6 @@ def render() -> None:
         )
 
     st.plotly_chart(tornado_fig, width="stretch")
+    numbered.figure_caption("sensitivity.tornado.fig")
     _render_sensitivity_summary(sensitivities, base_value, target_volume, unit_system)
 

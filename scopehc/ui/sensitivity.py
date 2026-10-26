@@ -19,7 +19,6 @@ from .common import (
     summary_table,
     render_custom_navigation,
     render_sidebar_settings,
-    render_sidebar_help,
 )
 
 

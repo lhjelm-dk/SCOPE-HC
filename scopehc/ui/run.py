@@ -19,7 +19,6 @@ from .common import (
     update_progress,
     render_custom_navigation,
     render_sidebar_settings,
-    render_sidebar_help,
 )
 
 

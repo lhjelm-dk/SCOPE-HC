@@ -978,47 +978,6 @@ def render_sidebar_settings() -> None:
     )
 
 
-def render_sidebar_help() -> None:
-    """Render quick reference help and legend content in the sidebar."""
-    with st.sidebar.expander("ℹ️ Help & Glossary", expanded=False):
-        st.markdown("**Quick start**")
-        st.caption(HELP["quick_start"])
-
-        st.markdown("---")
-        st.markdown("**GRV methods**")
-        st.caption(HELP["grv_method"])
-        st.caption(f"• {HELP['spill_point']}")
-        st.caption(f"• {HELP['eff_hc_depth']}")
-        st.caption(f"• {HELP['goc']}")
-
-        st.markdown("---")
-        st.markdown("**Fluids & PVT**")
-        st.caption(f"• {HELP['bg']}")
-        st.caption(f"• {HELP['invbo']}")
-        st.caption(f"• {HELP['gor']}")
-        st.caption(f"• {HELP['cgr']}")
-
-        st.markdown("---")
-        st.markdown("**Recovery & Simulation**")
-        st.caption(f"• {HELP['rf_oil']}")
-        st.caption(f"• {HELP['rf_gas']}")
-        st.caption(f"• {HELP['trials']}")
-        st.caption(f"• {HELP['seed']}")
-
-        st.markdown("---")
-        st.markdown("**Charts**")
-        st.caption(HELP["charts"])
-
-        st.markdown("---")
-        st.markdown("**Units quick reference**")
-        st.code(
-            "Bg: rb/scf\n1/Bg: scf/rcf\n1/Bo: STB/rb\nGOR: scf/STB\nCGR: STB/MMscf\nGRV/PV: m³\nBOE factor: scf/BOE",
-            language="text",
-        )
-
-    render_color_legend()
-
-
 def get_unit_help_text(unit_system: str) -> str:
     """Get help text for unit abbreviations."""
     if unit_system == "oilfield":

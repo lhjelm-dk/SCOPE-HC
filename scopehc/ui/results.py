@@ -22,7 +22,6 @@ from .common import (
     get_unit_system,
     render_custom_navigation,
     render_sidebar_settings,
-    render_sidebar_help,
     PALETTE,
     collect_all_inputs_from_session,
     compute_input_hash,

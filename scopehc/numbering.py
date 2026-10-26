@@ -91,7 +91,114 @@ SECTIONS: Tuple[Section, ...] = (
         sec("overview.assumptions", "Assumptions and formulas"),
     )),
     sec("inputs", "Inputs", children=(
-        sec("inputs.grv", "Gross Rock Volume (GRV)"),
+        # The GRV page writes several of these sections more than once: the Direct
+        # and Area x Thickness x GCF methods share _display_split_grv_results(),
+        # while each depth-based method inlines its own copy of the same block.
+        # One key each, so a number means the same section whichever method is on.
+        sec("inputs.grv", "Gross Rock Volume (GRV)", children=(
+            sec("inputs.grv.method", "GRV input method"),
+            sec("inputs.grv.atgcf", "Area, thickness and geometric correction", children=(
+                sec(
+                    "inputs.grv.atgcf.calculator",
+                    "Geometric correction factor calculator",
+                    items=(fig("inputs.grv.atgcf.calculator.fig", "Geometric correction factor"),),
+                ),
+                sec("inputs.grv.atgcf.sensitivity", "Sensitivity summary"),
+            )),
+            sec(
+                "inputs.grv.deptharea",
+                "Depth-area relationship",
+                items=(
+                    fig("inputs.grv.deptharea.fig", "Depth versus area, with GRV and spill point"),
+                    tab("inputs.grv.deptharea.tab", "Depth-area table"),
+                ),
+            ),
+            sec("inputs.grv.depths", "Depth distributions", children=(
+                sec(
+                    "inputs.grv.depths.spill",
+                    "Spill point depth",
+                    items=(fig("inputs.grv.depths.spill.fig", "Spill point depth distribution"),),
+                ),
+                sec(
+                    "inputs.grv.depths.hc",
+                    "Effective hydrocarbon contact depth",
+                    items=(fig("inputs.grv.depths.hc.fig", "Effective HC depth distribution"),),
+                ),
+                sec(
+                    "inputs.grv.depths.goc",
+                    "Gas-oil contact (GOC) definition",
+                    items=(fig("inputs.grv.depths.goc.fig", "GOC depth distribution"),),
+                ),
+            )),
+            sec("inputs.grv.results", "GRV results by fluid type", children=(
+                sec(
+                    "inputs.grv.results.oil",
+                    "Oil GRV",
+                    items=(
+                        fig("inputs.grv.results.oil.fig", "Oil GRV distribution"),
+                        tab("inputs.grv.results.oil.tab", "Oil GRV statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.results.gas",
+                    "Gas GRV",
+                    items=(
+                        fig("inputs.grv.results.gas.fig", "Gas GRV distribution"),
+                        tab("inputs.grv.results.gas.tab", "Gas GRV statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.results.total",
+                    "Total hydrocarbon GRV",
+                    items=(
+                        fig("inputs.grv.results.total.fig", "Total HC GRV distribution"),
+                        tab("inputs.grv.results.total.tab", "Total HC GRV statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.results.summary",
+                    "Combined GRV summary",
+                    items=(tab("inputs.grv.results.summary.tab", "GRV summary by fluid type"),),
+                ),
+            )),
+            sec(
+                "inputs.grv.abovespill",
+                "GRV distribution above spill point",
+                items=(fig("inputs.grv.abovespill.fig", "GRV above spill point"),),
+            ),
+            sec("inputs.grv.columns", "Gas and oil column heights", children=(
+                sec(
+                    "inputs.grv.columns.gas",
+                    "Gas column height",
+                    items=(
+                        fig("inputs.grv.columns.gas.fig", "Gas column height distribution"),
+                        tab("inputs.grv.columns.gas.tab", "Gas column height statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.columns.oil",
+                    "Oil column height",
+                    items=(
+                        fig("inputs.grv.columns.oil.fig", "Oil column height distribution"),
+                        tab("inputs.grv.columns.oil.tab", "Oil column height statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.columns.overlay",
+                    "Column heights overlay",
+                    items=(fig("inputs.grv.columns.overlay.fig", "Oil and gas column heights"),),
+                ),
+            )),
+            sec("inputs.grv.split", "Oil and gas split by fraction"),
+            sec(
+                "inputs.grv.final",
+                "Final GRV for calculations",
+                items=(
+                    fig("inputs.grv.final.fig", "Final GRV distribution"),
+                    tab("inputs.grv.final.tab", "Final GRV statistics"),
+                ),
+            ),
+        )),
         sec("inputs.ntg", "Net-to-Gross (NtG)", children=(
             sec(
                 "inputs.ntg.dist",

@@ -278,13 +278,105 @@ SECTIONS: Tuple[Section, ...] = (
         sec("run.inputs", "Input parameter summary"),
     )),
     sec("results", "Results", children=(
-        sec("results.inplace", "In-place volumes (STOIIP / GIIP)"),
-        sec("results.recoverable", "Recoverable volumes"),
-        sec("results.surface", "Recoverable (surface) volumes"),
-        sec("results.thr", "Total hydrocarbon resource (THR)"),
-        sec("results.boe", "Hydrocarbon volume distribution (BOE)"),
-        sec("results.columns", "Oil and gas column distributions"),
-        sec("results.saturation", "Saturation distributions"),
+        # The in-place and recoverable blocks each draw their plots from one loop,
+        # so the subsection key travels with the loop item rather than being read
+        # from the call site.
+        sec("results.inplace", "In-place volumes (STOIIP / GIIP)", children=(
+                sec(
+                    "results.inplace.stoiip",
+                    "Oil in place (STOIIP)",
+                    items=(
+                        fig("results.inplace.stoiip.fig", "STOIIP distribution"),
+                        tab("results.inplace.stoiip.tab", "STOIIP statistics"),
+                    ),
+                ),
+                sec(
+                    "results.inplace.giip",
+                    "Gas in place (GIIP)",
+                    items=(
+                        fig("results.inplace.giip.fig", "GIIP distribution"),
+                        tab("results.inplace.giip.tab", "GIIP statistics"),
+                    ),
+                ),
+        )),
+        sec("results.recoverable", "Recoverable volumes", children=(
+                sec(
+                    "results.recoverable.oil",
+                    "Recoverable oil",
+                    items=(
+                        fig("results.recoverable.oil.fig", "Recoverable oil distribution"),
+                        tab("results.recoverable.oil.tab", "Recoverable oil statistics"),
+                    ),
+                ),
+                sec(
+                    "results.recoverable.freegas",
+                    "Recoverable free gas",
+                    items=(
+                        fig("results.recoverable.freegas.fig", "Recoverable free gas distribution"),
+                        tab("results.recoverable.freegas.tab", "Recoverable free gas statistics"),
+                    ),
+                ),
+                sec(
+                    "results.recoverable.assocgas",
+                    "Recoverable associated gas",
+                    items=(
+                        fig("results.recoverable.assocgas.fig", "Recoverable associated gas distribution"),
+                        tab("results.recoverable.assocgas.tab", "Recoverable associated gas statistics"),
+                    ),
+                ),
+                sec(
+                    "results.recoverable.condensate",
+                    "Recoverable condensate",
+                    items=(
+                        fig("results.recoverable.condensate.fig", "Recoverable condensate distribution"),
+                        tab("results.recoverable.condensate.tab", "Recoverable condensate statistics"),
+                    ),
+                ),
+        )),
+        sec(
+            "results.surface",
+            "Recoverable (surface) volumes",
+            items=(tab("results.surface.tab", "Key percentiles for recoverable volumes"),),
+        ),
+        sec(
+            "results.thr",
+            "Total hydrocarbon resource (THR)",
+            items=(
+                tab("results.thr.tab", "THR percentiles"),
+                tab("results.thr.composition", "THR composition (mean)"),
+            ),
+        ),
+        sec(
+            "results.boe",
+            "Hydrocarbon volume distribution (BOE)",
+            items=(
+                fig("results.boe.fig", "Recoverable volumes by component (BOE)"),
+                # The expander below the violin plot holds a second THR view.
+                fig("results.boe.thr_fig", "THR distribution"),
+                tab("results.boe.thr_tab", "THR statistics"),
+                tab("results.boe.thr_breakdown", "THR breakdown by fluid type"),
+            ),
+        ),
+        sec(
+            "results.columns",
+            "Oil and gas column distributions",
+            items=(fig("results.columns.fig", "Oil and gas column heights"),),
+        ),
+        # Declared, but not rendered today: results.py defines
+        # _render_saturation_summary() and render_saturation_plots() and calls
+        # neither. See the PR that added this.
+        sec("results.saturation", "Saturation distributions", children=(
+            sec(
+                "results.saturation.assumptions",
+                "Saturation assumptions",
+                items=(fig("results.saturation.assumptions.fig", "Saturation assumptions"),),
+            ),
+            sec(
+                "results.saturation.plots",
+                "Saturation distributions by zone",
+                items=(fig("results.saturation.plots.fig", "Saturation distribution"),),
+            ),
+        )),
         sec("results.crossplot", "Cross-plot and statistics"),
     )),
     sec("sensitivity", "Sensitivity", children=(

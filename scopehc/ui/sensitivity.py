@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from . import numbered
 from scopehc.compute import compute_results
 
 from .common import (
@@ -799,7 +800,7 @@ def _render_sensitivity_summary(
 def render() -> None:
     """Render the sensitivity analysis page."""
     st.session_state["current_page"] = "_pages_disabled/05_Sensitivity.py"
-    st.header("Sensitivity Analysis")
+    numbered.heading("sensitivity", "Sensitivity Analysis")
 
     trial_data, results = _ensure_results()
     if results is None or trial_data is None:

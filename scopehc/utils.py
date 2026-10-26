@@ -110,6 +110,28 @@ def validate_depths(D_top, D_hc):
     return D_top, D_hc, warnings
 
 
+def p10_p90_by_convention(x, use_exceedance: bool = True, axis=None):
+    """(P10, P90) of `x` under the app's percentile convention.
+
+    summarize_array() is the right tool for a flat array of realizations. This is for
+    percentiles taken across realizations per row or column (axis=0), where the answer
+    is a curve rather than a scalar and a dict of statistics will not do - for example
+    the uncertainty bands on the GRV depth-area plot.
+
+    The convention is a parameter rather than a session-state lookup so the numbers can
+    be tested without a Streamlit context; the UI layer is the only place that knows
+    what the user picked in the sidebar. See crossplot.percentiles_by_convention for
+    the same pattern on flat arrays.
+
+    use_exceedance=True  -> P10 is the 90th percentile (the high case), P90 the 10th.
+    use_exceedance=False -> P10 is the 10th percentile, P90 the 90th.
+    """
+    low, high = np.percentile(np.asarray(x, dtype=float), [10, 90], axis=axis)
+    if use_exceedance:
+        return high, low
+    return low, high
+
+
 def summarize_array(x: np.ndarray) -> Dict[str, float]:
     """Summarize array with statistics including percentiles, mean, std dev, etc.
     

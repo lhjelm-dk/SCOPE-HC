@@ -72,9 +72,12 @@ def hist_and_cdf(x, key_name: str, unit_label: str, nbins=100):
     # Calculate percentiles using convention-aware summarize_array
     from scopehc.utils import summarize_array
     stats = summarize_array(x)
-    p10 = stats.get("P10", np.percentile(x, 10))
-    p50 = stats.get("P50", np.percentile(x, 50))
-    p90 = stats.get("P90", np.percentile(x, 90))
+    # summarize_array returns {} only for an empty or all-NaN array, so the fallbacks
+    # are nan rather than raw percentiles: a raw percentile here would silently label
+    # the 10th percentile "P10" under a convention where P10 is the 90th.
+    p10 = stats.get("P10", float("nan"))
+    p50 = stats.get("P50", float("nan"))
+    p90 = stats.get("P90", float("nan"))
     mean_val = stats.get("mean", np.mean(x))
     
     # Create figure

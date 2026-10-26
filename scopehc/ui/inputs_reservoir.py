@@ -38,6 +38,7 @@ def render_ntg(
         defaults["NtG"],
         num_sims,
         stats_decimals=3,
+        section="inputs.ntg.dist",
     )
     sNtG = sanitize(sNtG, "NtG", min_allowed=0.0, max_allowed=1.0, fill=0.5, warn=st.caption)
     sNtG = clip01(sNtG)
@@ -76,6 +77,7 @@ def render_porosity(
         defaults["p"],
         num_sims,
         stats_decimals=3,
+        section="inputs.por.dist",
     )
     sp = sanitize(sp, "Porosity", min_allowed=0.0, max_allowed=1.0, fill=0.2, warn=st.caption)
     sp = clip01(sp)

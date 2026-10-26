@@ -594,6 +594,7 @@ def _apply_fluid_type_split(prefix_key: str, total_grv: np.ndarray, num_sims: in
             stats_decimals=3,
             help_text="Fraction of total GRV that is oil (remainder is gas). Supports all distribution types. Values are automatically clipped to [0, 1].",
             param_name=f_oil_key,
+            section="inputs.grv.split.foil",
         )
         
         # Clip f_oil to [0, 1] range
@@ -802,6 +803,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             plot_unit_label="×10^6 m³",
             stats_decimals=1,
             display_scale=1e-6,
+            section="inputs.grv.direct",
         )
         
         # Store total GRV for split logic
@@ -828,7 +830,8 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
     elif grv_option == "Area × Thickness × GCF":
         st.caption("Provide Area, GCF, and h; GRV is calculated and shown below.")
         sA = render_param(
-            "A", "Area A", "km²", defaults["A"]["dist"], defaults["A"], num_sims, stats_decimals=3
+            "A", "Area A", "km²", defaults["A"]["dist"], defaults["A"], num_sims, stats_decimals=3,
+            section="inputs.grv.atgcf.area",
         )
 
         # All defaults are already initialized by _initialize_grv_input_defaults()
@@ -863,6 +866,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 defaults["GCF"],
                 num_sims,
                 stats_decimals=3,
+                section="inputs.grv.atgcf.gcf",
             )
         else:
             numbered.heading("inputs.grv.atgcf.calculator")
@@ -1150,6 +1154,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                         num_sims,
                         plot_unit_label="multiplier",
                         stats_decimals=3,
+                        section="inputs.grv.atgcf.gcf_mp",
                     )
             else:
                 gcf_mp_samples = np.full(num_sims, 1.0)
@@ -1364,6 +1369,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             defaults["h"],
             num_sims,
             stats_decimals=2,
+            section="inputs.grv.atgcf.thickness",
         )
 
         sGRV_m3 = (sA * 1_000_000.0) * sh * sGCF
@@ -1595,15 +1601,18 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 )
                 if area_dist == "PERT":
                     sAreaMult = render_param(
-                        "AreaMult", "Area multiplier", "", "PERT", {"min": 0.8, "mode": 1.0, "max": 1.2}, num_sims
+                        "AreaMult", "Area multiplier", "", "PERT", {"min": 0.8, "mode": 1.0, "max": 1.2}, num_sims,
+                        section="inputs.grv.depths.areamult",
                     )
                 elif area_dist == "Triangular":
                     sAreaMult = render_param(
-                        "AreaMult", "Area multiplier", "", "Triangular", {"min": 0.7, "mode": 1.0, "max": 1.3}, num_sims
+                        "AreaMult", "Area multiplier", "", "Triangular", {"min": 0.7, "mode": 1.0, "max": 1.3}, num_sims,
+                        section="inputs.grv.depths.areamult",
                     )
                 else:
                     sAreaMult = render_param(
-                        "AreaMult", "Area multiplier", "", "Uniform", {"min": 0.85, "max": 1.15}, num_sims
+                        "AreaMult", "Area multiplier", "", "Uniform", {"min": 0.85, "max": 1.15}, num_sims,
+                        section="inputs.grv.depths.areamult",
                     )
             else:
                 sAreaMult = None
@@ -1622,6 +1631,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 {"min": 2200, "mode": 2350, "max": 2410},
                 num_sims,
                 stats_decimals=1,
+                section="inputs.grv.depths.spill",
             )
         with col_depth2:
             sHCDepth = render_param(
@@ -1632,6 +1642,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 {"min": 2100, "mode": 2350, "max": 2400},
                 num_sims,
                 stats_decimals=1,
+                section="inputs.grv.depths.hc",
             )
 
         st.session_state["sD_spill"] = sSpillPoint
@@ -1715,6 +1726,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     {"min": 2100, "mode": 2250, "max": 2350},
                     num_sims,
                     stats_decimals=1,
+                    section="inputs.grv.depths.goc",
                 )
                 st.session_state["sGOC_depth"] = sGOC_depth
             elif goc_mode == "Oil fraction of HC column":
@@ -1727,7 +1739,8 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     {"min": 0.05, "mode": 0.2, "max": 0.3},
                     num_sims,
                     stats_decimals=4,
-                    help_text="Fraction of hydrocarbon column that is oil (remainder is gas). Distribution of values between 0 and 1."
+                    help_text="Fraction of hydrocarbon column that is oil (remainder is gas). Distribution of values between 0 and 1.",
+                    section="inputs.grv.depths.foil",
                 )
                 # Store the sampled array for use in calculations
                 st.session_state["da_oil_frac"] = sF_oil
@@ -1742,6 +1755,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     {"min": 10.0, "mode": 20.0, "max": 50.0},
                     num_sims,
                     stats_decimals=1,
+                    section="inputs.grv.depths.hoil",
                 )
                 st.session_state[h_oil_key] = sH_oil_m
             
@@ -2347,6 +2361,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 {"min": 100.0, "mode": 120.0, "max": 200.0},
                 num_sims,
                 stats_decimals=1,
+                section="inputs.grv.depths.resthickness",
             )
             st.session_state["sReservoirThickness"] = sThickness
             # CRITICAL: Values are already initialized by _initialize_grv_input_defaults()
@@ -2393,6 +2408,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                         "PERT",
                         {"min": 0.8, "mode": 1.0, "max": 1.2},
                         num_sims,
+                        section="inputs.grv.depths.areamult",
                     )
                 elif area_dist_D == "Triangular":
                     sAreaMult_D = render_param(
@@ -2402,10 +2418,12 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                         "Triangular",
                         {"min": 0.7, "mode": 1.0, "max": 1.3},
                         num_sims,
+                        section="inputs.grv.depths.areamult",
                     )
                 else:
                     sAreaMult_D = render_param(
-                        "AreaMult_D", "Top area multiplier", "", "Uniform", {"min": 0.85, "max": 1.15}, num_sims
+                        "AreaMult_D", "Top area multiplier", "", "Uniform", {"min": 0.85, "max": 1.15}, num_sims,
+                        section="inputs.grv.depths.areamult",
                     )
             else:
                 sAreaMult_D = None
@@ -2424,6 +2442,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 {"min": 2200, "mode": 2350, "max": 2410},
                 num_sims,
                 stats_decimals=1,
+                section="inputs.grv.depths.spill",
             )
         with col_d2:
             sHCDepthD = render_param(
@@ -2434,6 +2453,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 {"min": 2100, "mode": 2350, "max": 2400},
                 num_sims,
                 stats_decimals=1,
+                section="inputs.grv.depths.hc",
             )
 
         st.session_state["sD_spill"] = sSpillPointD
@@ -2517,6 +2537,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     {"min": 2100, "mode": 2250, "max": 2350},
                     num_sims,
                     stats_decimals=1,
+                    section="inputs.grv.depths.goc",
                 )
                 st.session_state["sGOC_depth"] = sGOC_depth_D
             elif goc_mode == "Oil fraction of HC column":
@@ -2529,7 +2550,8 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     {"min": 0.05, "mode": 0.2, "max": 0.3},
                     num_sims,
                     stats_decimals=4,
-                    help_text="Fraction of hydrocarbon column that is oil (remainder is gas). Distribution of values between 0 and 1."
+                    help_text="Fraction of hydrocarbon column that is oil (remainder is gas). Distribution of values between 0 and 1.",
+                    section="inputs.grv.depths.foil",
                 )
                 # Store the sampled array for use in calculations
                 st.session_state["da_oil_frac_D"] = sF_oil_D
@@ -2544,6 +2566,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     {"min": 10.0, "mode": 20.0, "max": 50.0},
                     num_sims,
                     stats_decimals=1,
+                    section="inputs.grv.depths.hoil",
                 )
                 st.session_state[h_oil_key_D] = sH_oil_m_D
             
@@ -3201,6 +3224,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                     num_sims,
                     plot_unit_label="multiplier",
                     stats_decimals=3,
+                    section="inputs.grv.final.mp",
                 )
         else:
             grv_mp_samples = np.full(num_sims, 1.0)

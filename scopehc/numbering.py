@@ -101,7 +101,48 @@ SECTIONS: Tuple[Section, ...] = (
         # One key each, so a number means the same section whichever method is on.
         sec("inputs.grv", "Gross Rock Volume (GRV)", children=(
             sec("inputs.grv.method", "GRV input method"),
+            sec(
+                "inputs.grv.direct",
+                "Direct GRV",
+                items=(
+                    fig("inputs.grv.direct.fig", "Direct GRV distribution"),
+                    tab("inputs.grv.direct.tab", "Direct GRV statistics"),
+            ),
+            ),
             sec("inputs.grv.atgcf", "Area, thickness and geometric correction", children=(
+                sec(
+                    "inputs.grv.atgcf.area",
+                    "Area",
+                    items=(
+                        fig("inputs.grv.atgcf.area.fig", "Area distribution"),
+                        tab("inputs.grv.atgcf.area.tab", "Area statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.atgcf.thickness",
+                    "Reservoir thickness",
+                    items=(
+                        fig("inputs.grv.atgcf.thickness.fig", "Reservoir thickness distribution"),
+                        tab("inputs.grv.atgcf.thickness.tab", "Reservoir thickness statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.atgcf.gcf",
+                    "Geometric correction factor",
+                    items=(
+                        fig("inputs.grv.atgcf.gcf.fig", "Geometric correction factor distribution"),
+                        tab("inputs.grv.atgcf.gcf.tab", "Geometric correction factor statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.atgcf.gcf_mp",
+                    "GCF uncertainty multiplier",
+                    items=(
+                        fig("inputs.grv.atgcf.gcf_mp.fig", "GCF uncertainty multiplier distribution"),
+                        tab("inputs.grv.atgcf.gcf_mp.tab", "GCF uncertainty multiplier statistics"),
+                    ),
+                ),
+
                 sec(
                     "inputs.grv.atgcf.calculator",
                     "Geometric correction factor calculator",
@@ -136,21 +177,54 @@ SECTIONS: Tuple[Section, ...] = (
             ),
             sec("inputs.grv.depths", "Depth distributions", children=(
                 sec(
+                    "inputs.grv.depths.resthickness",
+                    "Reservoir thickness (top-only method)",
+                    items=(
+                        fig("inputs.grv.depths.resthickness.fig", "Reservoir thickness (top-only method) distribution"),
+                        tab("inputs.grv.depths.resthickness.tab", "Reservoir thickness (top-only method) statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.depths.areamult",
+                    "Area uncertainty multiplier",
+                    items=(
+                        fig("inputs.grv.depths.areamult.fig", "Area uncertainty multiplier distribution"),
+                        tab("inputs.grv.depths.areamult.tab", "Area uncertainty multiplier statistics"),
+                    ),
+                ),
+                sec(
                     "inputs.grv.depths.spill",
                     "Spill point depth",
-                    items=(fig("inputs.grv.depths.spill.fig", "Spill point depth distribution"),),
+                    items=(fig("inputs.grv.depths.spill.fig", "Spill point depth distribution"), tab("inputs.grv.depths.spill.tab", "Spill point depth statistics"),),
                 ),
                 sec(
                     "inputs.grv.depths.hc",
                     "Effective hydrocarbon contact depth",
-                    items=(fig("inputs.grv.depths.hc.fig", "Effective HC depth distribution"),),
+                    items=(fig("inputs.grv.depths.hc.fig", "Effective HC depth distribution"), tab("inputs.grv.depths.hc.tab", "Effective HC depth statistics"),),
                 ),
                 sec(
                     "inputs.grv.depths.goc",
                     "Gas-oil contact (GOC) definition",
-                    items=(fig("inputs.grv.depths.goc.fig", "GOC depth distribution"),),
+                    items=(fig("inputs.grv.depths.goc.fig", "GOC depth distribution"), tab("inputs.grv.depths.goc.tab", "GOC depth statistics"),),
                 ),
-            )),
+                sec(
+                    "inputs.grv.depths.foil",
+                    "Oil fraction of the hydrocarbon column",
+                    items=(
+                        fig("inputs.grv.depths.foil.fig", "Oil fraction of the hydrocarbon column distribution"),
+                        tab("inputs.grv.depths.foil.tab", "Oil fraction of the hydrocarbon column statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.grv.depths.hoil",
+                    "Oil column height",
+                    items=(
+                        fig("inputs.grv.depths.hoil.fig", "Oil column height distribution"),
+                        tab("inputs.grv.depths.hoil.tab", "Oil column height statistics"),
+                    ),
+                ),
+            )
+        ),
             sec("inputs.grv.results", "GRV results by fluid type", children=(
                 sec(
                     "inputs.grv.results.oil",
@@ -210,7 +284,18 @@ SECTIONS: Tuple[Section, ...] = (
                     items=(fig("inputs.grv.columns.overlay.fig", "Oil and gas column heights"),),
                 ),
             )),
-            sec("inputs.grv.split", "Oil and gas split by fraction"),
+            sec("inputs.grv.split", "Oil and gas split by fraction",
+                children=(
+                sec(
+                    "inputs.grv.split.foil",
+                    "Oil fraction of total hydrocarbon GRV",
+                    items=(
+                        fig("inputs.grv.split.foil.fig", "Oil fraction of total hydrocarbon GRV distribution"),
+                        tab("inputs.grv.split.foil.tab", "Oil fraction of total hydrocarbon GRV statistics"),
+                    ),
+                ),
+            ),
+            ),
             sec(
                 "inputs.grv.final",
                 "Final GRV for calculations",
@@ -218,20 +303,30 @@ SECTIONS: Tuple[Section, ...] = (
                     fig("inputs.grv.final.fig", "Final GRV distribution"),
                     tab("inputs.grv.final.tab", "Final GRV statistics"),
                 ),
+                children=(
+                sec(
+                    "inputs.grv.final.mp",
+                    "GRV uncertainty multiplier",
+                    items=(
+                        fig("inputs.grv.final.mp.fig", "GRV uncertainty multiplier distribution"),
+                        tab("inputs.grv.final.mp.tab", "GRV uncertainty multiplier statistics"),
+                    ),
+                ),
+            ),
             ),
         )),
         sec("inputs.ntg", "Net-to-Gross (NtG)", children=(
             sec(
                 "inputs.ntg.dist",
                 "Net-to-gross distribution",
-                items=(fig("inputs.ntg.dist.hist", "Net-to-gross distribution"),),
+                items=(fig("inputs.ntg.dist.fig", "Net-to-gross distribution"), tab("inputs.ntg.dist.tab", "Net-to-gross statistics"),),
             ),
         )),
         sec("inputs.por", "Porosity", children=(
             sec(
                 "inputs.por.dist",
                 "Porosity distribution",
-                items=(fig("inputs.por.dist.hist", "Porosity distribution"),),
+                items=(fig("inputs.por.dist.fig", "Porosity distribution"), tab("inputs.por.dist.tab", "Porosity statistics"),),
             ),
         )),
         # The five saturation subsections below are mutually exclusive: the mode
@@ -242,35 +337,119 @@ SECTIONS: Tuple[Section, ...] = (
             sec(
                 "inputs.sat.global",
                 "Global hydrocarbon saturation",
-                items=(fig("inputs.sat.global.hist", "Global hydrocarbon saturation"),),
+                items=(fig("inputs.sat.global.fig", "Global hydrocarbon saturation"), tab("inputs.sat.global.tab", "Global hydrocarbon saturation statistics"),),
             ),
             sec(
                 "inputs.sat.sw_oil",
                 "Water saturation, oil zone",
-                items=(fig("inputs.sat.sw_oil.hist", "Water saturation, oil zone"),),
+                items=(fig("inputs.sat.sw_oil.fig", "Water saturation, oil zone"),),
             ),
             sec(
                 "inputs.sat.sw_gas",
                 "Water saturation, gas zone",
-                items=(fig("inputs.sat.sw_gas.hist", "Water saturation, gas zone"),),
+                items=(fig("inputs.sat.sw_gas.fig", "Water saturation, gas zone"),),
             ),
             sec(
                 "inputs.sat.shc_oil",
                 "Hydrocarbon saturation, oil phase",
-                items=(fig("inputs.sat.shc_oil.hist", "Hydrocarbon saturation, oil phase"),),
+                items=(fig("inputs.sat.shc_oil.fig", "Hydrocarbon saturation, oil phase"),),
             ),
             sec(
                 "inputs.sat.shc_gas",
                 "Hydrocarbon saturation, gas phase",
-                items=(fig("inputs.sat.shc_gas.hist", "Hydrocarbon saturation, gas phase"),),
+                items=(fig("inputs.sat.shc_gas.fig", "Hydrocarbon saturation, gas phase"),),
             ),
         )),
         sec("inputs.fluids", "Fluids & PVT", children=(
-            sec("inputs.fluids.oil", "Oil properties"),
-            sec("inputs.fluids.gas", "Gas properties"),
-            sec("inputs.fluids.cond", "Condensate properties"),
+            sec("inputs.fluids.oil", "Oil properties",
+                children=(
+                sec(
+                    "inputs.fluids.oil.invbo",
+                    "Oil shrinkage factor (1/Bo)",
+                    items=(
+                        fig("inputs.fluids.oil.invbo.fig", "Oil shrinkage factor (1/Bo) distribution"),
+                        tab("inputs.fluids.oil.invbo.tab", "Oil shrinkage factor (1/Bo) statistics"),
+                    ),
+                ),
+            ),
+            ),
+            sec("inputs.fluids.gas", "Gas properties",
+                children=(
+                sec(
+                    "inputs.fluids.gas.invbg",
+                    "Gas expansion factor (1/Bg)",
+                    items=(
+                        fig("inputs.fluids.gas.invbg.fig", "Gas expansion factor (1/Bg) distribution"),
+                        tab("inputs.fluids.gas.invbg.tab", "Gas expansion factor (1/Bg) statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.fluids.gas.bg",
+                    "Gas expansion factor (Bg)",
+                    items=(
+                        fig("inputs.fluids.gas.bg.fig", "Gas expansion factor (Bg) distribution"),
+                        tab("inputs.fluids.gas.bg.tab", "Gas expansion factor (Bg) statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.fluids.gas.gor",
+                    "Gas-oil ratio (GOR)",
+                    items=(
+                        fig("inputs.fluids.gas.gor.fig", "Gas-oil ratio (GOR) distribution"),
+                        tab("inputs.fluids.gas.gor.tab", "Gas-oil ratio (GOR) statistics"),
+                    ),
+                ),
+            ),
+            ),
+            sec("inputs.fluids.cond", "Condensate properties",
+                children=(
+                sec(
+                    "inputs.fluids.cond.cy",
+                    "Condensate yield (CY)",
+                    items=(
+                        fig("inputs.fluids.cond.cy.fig", "Condensate yield (CY) distribution"),
+                        tab("inputs.fluids.cond.cy.tab", "Condensate yield (CY) statistics"),
+                    ),
+                ),
+            ),
+            ),
         )),
-        sec("inputs.rf", "Recovery factors"),
+        sec("inputs.rf", "Recovery factors",
+                children=(
+                sec(
+                    "inputs.rf.oil",
+                    "Oil recovery factor",
+                    items=(
+                        fig("inputs.rf.oil.fig", "Oil recovery factor distribution"),
+                        tab("inputs.rf.oil.tab", "Oil recovery factor statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.rf.gas",
+                    "Free gas recovery factor",
+                    items=(
+                        fig("inputs.rf.gas.fig", "Free gas recovery factor distribution"),
+                        tab("inputs.rf.gas.tab", "Free gas recovery factor statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.rf.assoc",
+                    "Associated gas recovery factor",
+                    items=(
+                        fig("inputs.rf.assoc.fig", "Associated gas recovery factor distribution"),
+                        tab("inputs.rf.assoc.tab", "Associated gas recovery factor statistics"),
+                    ),
+                ),
+                sec(
+                    "inputs.rf.cond",
+                    "Condensate recovery factor",
+                    items=(
+                        fig("inputs.rf.cond.fig", "Condensate recovery factor distribution"),
+                        tab("inputs.rf.cond.tab", "Condensate recovery factor statistics"),
+                    ),
+                ),
+            ),
+            ),
     )),
     sec("dependencies", "Dependencies", children=(
         sec("dependencies.matrix", "Parameter dependencies and correlations"),

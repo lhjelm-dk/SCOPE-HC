@@ -53,6 +53,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
         stats_decimals=4,
         help_text=invbo_help,
         param_name="InvBo",
+        section="inputs.fluids.oil.invbo",
     )
 
     numbered.heading("inputs.fluids.gas")
@@ -82,6 +83,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
             stats_decimals=4,
             help_text=invbg_help,
             param_name="InvBg",
+            section="inputs.fluids.gas.invbg",
         )
 
         if unit_system == "oilfield":
@@ -109,6 +111,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
             help_text=bg_help,
             param_name="Bg",
             context="invbg",
+            section="inputs.fluids.gas.bg",
         )
 
     gor_unit = "scf/STB" if unit_system == "oilfield" else "m³/m³"
@@ -127,6 +130,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
         stats_decimals=4,
         help_text=gor_help,
         param_name="GOR",
+        section="inputs.fluids.gas.gor",
     )
 
     numbered.heading("inputs.fluids.cond")
@@ -146,6 +150,7 @@ def render_fluids(num_sims: int, defaults, show_inline_tips: bool) -> None:
         stats_decimals=4,
         help_text=cy_help,
         param_name="CY",
+        section="inputs.fluids.cond.cy",
     )
     st.caption("💡 Recovery Factors are configured in the Recovery Factor section below.")
 
@@ -180,6 +185,7 @@ def render_recovery(num_sims: int, defaults, show_inline_tips: bool) -> None:
         stats_decimals=4,
         help_text="Oil recovery factor (fraction of oil that can be recovered)",
         param_name="RF_oil",
+        section="inputs.rf.oil",
     )
 
     sRF_gas = render_param(
@@ -192,6 +198,7 @@ def render_recovery(num_sims: int, defaults, show_inline_tips: bool) -> None:
         stats_decimals=4,
         help_text="Free gas recovery factor (fraction of free gas that can be recovered)",
         param_name="RF_gas",
+        section="inputs.rf.gas",
     )
 
     sRF_assoc_gas = render_param(
@@ -204,6 +211,7 @@ def render_recovery(num_sims: int, defaults, show_inline_tips: bool) -> None:
         stats_decimals=4,
         help_text="Associated gas recovery factor (fraction of associated gas that can be recovered). Default: same as oil recovery factor.",
         param_name="RF_assoc",
+        section="inputs.rf.assoc",
     )
 
     sRF_cond = render_param(
@@ -216,6 +224,7 @@ def render_recovery(num_sims: int, defaults, show_inline_tips: bool) -> None:
         stats_decimals=4,
         help_text="Condensate recovery factor (fraction of condensate that can be recovered)",
         param_name="RF_cond",
+        section="inputs.rf.cond",
     )
 
     st.session_state["sRF_oil"] = sRF_oil

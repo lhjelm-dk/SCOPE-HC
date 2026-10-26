@@ -15,6 +15,7 @@ import plotly.io as pio
 from scipy.stats import skew, norm, beta
 
 from scopehc import numbering
+from . import numbered
 from scopehc.config import (
     RB_PER_M3,
     RCF_PER_RB,
@@ -1941,8 +1942,19 @@ def render_param(
     help_text: Optional[str] = None,
     param_name: Optional[str] = None,
     context: Optional[str] = None,
+    section: Optional[str] = None,
 ) -> np.ndarray:
-    """Render a parameter input widget with distribution controls."""
+    """Render a parameter input widget with distribution controls.
+
+    `section` is a key in scopehc/numbering.py. Given one, this renders the
+    numbered heading for the parameter and captions its distribution plot and
+    statistics table. It has to be passed in: every one of these plots is drawn
+    by the single st.plotly_chart below, so there is nothing at the call site
+    for a number to be inferred from.
+    """
+    if section is not None:
+        numbered.heading(section)
+
     rng = st.session_state.get("rng", np.random.default_rng(12345))
 
     current_unit_system = get_unit_system()
@@ -2858,7 +2870,11 @@ def render_param(
         make_hist_cdf_figure(display_samples, f"{label} distribution", f"{label} ({unit_lbl})", "input"),
         width="stretch",
     )
+    if section is not None:
+        numbered.figure_caption(f"{section}.fig")
     st.dataframe(summary_table(display_samples, decimals=stats_decimals), width="stretch")
+    if section is not None:
+        numbered.table_caption(f"{section}.tab")
 
     return samples
 

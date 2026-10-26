@@ -6,13 +6,14 @@ import streamlit as st
 
 # st.set_page_config is called in streamlit_app.py
 
+from scopehc.ui import numbered
 from scopehc.ui.inputs_reservoir import render_saturation_inputs
 
 
 def main() -> None:
     st.session_state["current_page"] = "_pages_disabled/01_Inputs_Saturation.py"
 
-    st.header("Saturation")
+    numbered.heading("inputs.sat")
 
     render_saturation_inputs()
 

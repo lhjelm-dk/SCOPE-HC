@@ -606,6 +606,13 @@ EXPECTED_RECOVERABLE_UNITS = {
 }
 
 #: Unit column of the THR table, and the header of the THR composition table.
+# Every row of these tables is printed to one decimal, so a sum of four of them
+# can sit up to 4 x 0.05 = 0.2 away from the separately-rounded total. That is
+# the display rounding, not a discrepancy between the figures. A relative
+# tolerance alone hides this under oilfield, where the numbers are ~6x larger,
+# and fails under metric - which is how it was found.
+ROW_SUM_ABS = 0.25
+
 EXPECTED_THR_UNIT = {"oilfield": "MMBOE", "si": "Mm³ BOE"}
 
 #: Columns of the exported trial table. Asserted as a set, not a sequence, so
@@ -931,9 +938,6 @@ def test_thr_composition_sums_to_the_reported_thr(scenario, units):
     Skipped for metric, where the component rows are a known defect; see
     test_metric_thr_composition_is_in_metric_boe.
     """
-    if units == "si":
-        pytest.skip("component rows are wrong under metric units; tracked by xfail below")
-
     table = composition_table(results_page(scenario, units))
     values = {row["Component"]: _as_float(row[f"Mean ({EXPECTED_THR_UNIT[units]})"])
               for _, row in table.iterrows()}
@@ -942,7 +946,7 @@ def test_thr_composition_sums_to_the_reported_thr(scenario, units):
 
     components = ["Oil", "Condensate", "Free Gas", "Associated Gas"]
     total = values["**Total**"]
-    assert sum(values[c] for c in components) == pytest.approx(total, rel=1e-3, abs=0.05)
+    assert sum(values[c] for c in components) == pytest.approx(total, rel=1e-3, abs=ROW_SUM_ABS)
     assert sum(percentages[c] for c in components) == pytest.approx(100.0, abs=0.3)
 
     # ... and the total is the THR figure reported everywhere else on the page.
@@ -1201,21 +1205,11 @@ def test_displayed_thr_equals_liquids_plus_gas_over_the_boe_factor():
 # Known defects, recorded but deliberately NOT pinned
 # ==========================================================================
 # These two assert the CORRECT behaviour and are expected to fail today. Under
-# strict xfail, fixing the defect makes the suite fail until the marker is
-# removed, which is the point: the wrong numbers must not be frozen in, and the
-# fix must not go unnoticed either.
+# These two were strict xfails when the tests were written: both defects were
+# live, and freezing the wrong numbers into an assertion would have made them
+# permanent. They are ordinary assertions now that the defects are fixed.
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "results.py:490-493 hard-codes `np.mean(Oil_BOE) / 1e6` regardless of unit "
-        "system, so under metric the component rows stay in MMBOE under a "
-        "`Mean (Mm³ BOE)` header while the Total is converted. Components read "
-        "6.29x high and the '% of THR' column sums to ~629%. The same bug sits at "
-        "sensitivity.py:121-124."
-    ),
-)
 @pytest.mark.parametrize("scenario", ["oil_only", "oil_gas"])
 def test_metric_thr_composition_is_in_metric_boe(scenario):
     table = composition_table(results_page(scenario, "si"))
@@ -1226,7 +1220,7 @@ def test_metric_thr_composition_is_in_metric_boe(scenario):
 
     components = ["Oil", "Condensate", "Free Gas", "Associated Gas"]
     assert sum(values[c] for c in components) == pytest.approx(
-        values["**Total**"], rel=1e-3, abs=0.05
+        values["**Total**"], rel=1e-3, abs=ROW_SUM_ABS
     )
     assert sum(percentages[c] for c in components) == pytest.approx(100.0, abs=0.3)
 
@@ -1236,16 +1230,6 @@ def test_metric_thr_composition_is_in_metric_boe(scenario):
     assert values["Oil"] == pytest.approx(oilfield_oil * M3_PER_BBL, rel=1e-2, abs=0.05)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "results.py:632-635 computes `Oil_BOE / conversion` where conversion is "
-        "M3_PER_BBL/1e6 = 1.59e-07; it should multiply, as results.py:531-534 and "
-        "sensitivity.py:166-169 both do. Components come out 1/conversion**2 = "
-        "4e13 times too large (Oil reads 6.9e14 Mm³ BOE) while the Total row, "
-        "which reuses the already-converted thr_display, is correct."
-    ),
-)
 @pytest.mark.parametrize("scenario", ["oil_only", "oil_gas"])
 def test_metric_thr_breakdown_is_in_metric_boe(scenario):
     table = breakdown_table(results_page(scenario, "si")).set_index("Fluid Type")
@@ -1254,7 +1238,7 @@ def test_metric_thr_breakdown_is_in_metric_boe(scenario):
     components = ["Oil", "Condensate", "Free Gas", "Associated Gas"]
     total = _as_float(table.loc["Total Hydrocarbon Resource (THR)", column])
     assert sum(_as_float(table.loc[c, column]) for c in components) == pytest.approx(
-        total, rel=1e-3, abs=0.05
+        total, rel=1e-3, abs=ROW_SUM_ABS
     )
     assert sum(
         _as_float(table.loc[c, "% of THR"]) for c in components

@@ -119,10 +119,16 @@ def _render_thr_breakdown(
     unit_system: str,
 ) -> None:
     st.markdown("**THR Composition (mean):**")
-    mean_oil = np.mean(oil_boe) / 1e6
-    mean_cond = np.mean(cond_boe) / 1e6
-    mean_free = np.mean(gas_free_boe) / 1e6
-    mean_assoc = np.mean(gas_assoc_boe) / 1e6
+    # A BOE quantity needs the same conversion as the total it is compared
+    # against. Dividing by 1e6 unconditionally made the components 6.29x the
+    # Total row under SI, and the percentages sum to about 629%.
+    boe_scale = (
+        1e-6 if unit_system == "oilfield" else UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
+    )
+    mean_oil = np.mean(oil_boe) * boe_scale
+    mean_cond = np.mean(cond_boe) * boe_scale
+    mean_free = np.mean(gas_free_boe) * boe_scale
+    mean_assoc = np.mean(gas_assoc_boe) * boe_scale
     mean_thr = float(np.mean(thr_display))
 
     if mean_thr > 0:

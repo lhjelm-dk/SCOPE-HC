@@ -6,13 +6,14 @@ import streamlit as st
 
 # st.set_page_config is called in streamlit_app.py
 
+from scopehc.ui import numbered
 from scopehc.ui.inputs_reservoir import render_porosity
 
 
 def main() -> None:
     st.session_state["current_page"] = "_pages_disabled/01_Inputs_Porosity.py"
 
-    st.header("Porosity")
+    numbered.heading("inputs.por")
 
     defaults = {
         "p": {"dist": "PERT", "min": 0.08, "mode": 0.18, "max": 0.21},

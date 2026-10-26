@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from . import numbered
 from .common import (
     collect_all_trial_data,
     get_unit_system,
@@ -29,7 +30,7 @@ def render() -> None:
     """Render the downloads/export page."""
     st.session_state["current_page"] = "_pages_disabled/06_Downloads.py"
 
-    st.header("Downloads & Exports")
+    numbered.heading("downloads")
     st.caption("Generate CSV/Excel extracts containing every trial and summary statistics.")
 
     trial_data = st.session_state.get("trial_data")

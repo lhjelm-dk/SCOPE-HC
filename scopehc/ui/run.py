@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+from . import numbered
 from scopehc.sampling import rng_from_seed, sample_scalar_dist
 from scopehc.compute import run_simulation
 from scopehc.ui.common import collect_all_inputs_from_session, compute_input_hash, render_run_controls_and_diagnostics
@@ -136,7 +137,7 @@ def render() -> None:
     """Render the simulation runner page using centralized run system."""
     st.session_state["current_page"] = "_pages_disabled/03_Run_Simulation.py"
 
-    st.header("Run Simulation")
+    numbered.heading("run")
     st.markdown(
         "Execute the Monte Carlo workflow after configuring inputs. "
         "The results page relies on the samples generated here."

@@ -6,13 +6,14 @@ import streamlit as st
 
 # st.set_page_config is called in streamlit_app.py
 
+from scopehc.ui import numbered
 from scopehc.ui.inputs_reservoir import render_ntg
 
 
 def main() -> None:
     st.session_state["current_page"] = "_pages_disabled/01_Inputs_Net_to_Gross_NtG.py"
 
-    st.header("Net-to-Gross (NtG)")
+    numbered.heading("inputs.ntg")
 
     defaults = {
         "NtG": {"dist": "PERT", "min": 0.27, "mode": 0.40, "max": 0.50},

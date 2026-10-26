@@ -6,13 +6,14 @@ import streamlit as st
 
 # st.set_page_config is called in streamlit_app.py
 
+from scopehc.ui import numbered
 from scopehc.ui.inputs_fluids import render_fluids
 
 
 def main() -> None:
     st.session_state["current_page"] = "_pages_disabled/01_Inputs_Fluids.py"
 
-    st.header("Fluids")
+    numbered.heading("inputs.fluids", "Fluids")
 
     defaults = {
         "A": {"dist": "PERT", "min": 105.0, "mode": 210.0, "max": 273.0},

@@ -1785,10 +1785,12 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
             vol_base_uncert = np.array(vol_base_uncert)
             dgrv_uncert = np.array(dgrv_uncert)
             
-            top_p10 = np.percentile(top_areas_uncert, 10, axis=0)
-            top_p90 = np.percentile(top_areas_uncert, 90, axis=0)
-            base_p10 = np.percentile(base_areas_uncert, 10, axis=0)
-            base_p90 = np.percentile(base_areas_uncert, 90, axis=0)
+            # Percentiles per depth, across realizations, under the sidebar convention:
+            # with probability-of-exceedance (the default) the P10 band is the high case.
+            from scopehc.utils import p10_p90_by_convention
+            use_exceedance = bool(st.session_state.get("percentile_exceedance", True))
+            top_p10, top_p90 = p10_p90_by_convention(top_areas_uncert, use_exceedance, axis=0)
+            base_p10, base_p90 = p10_p90_by_convention(base_areas_uncert, use_exceedance, axis=0)
             
             # Get mean spill point and HC depth for display
             mean_spill = float(np.mean(sSpillPoint))
@@ -2639,8 +2641,14 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                         # Only proceed if we have valid interpolated data
                         if len(base_areas_on_mean_grid) > 0:
                             base_areas_on_mean_grid = np.array(base_areas_on_mean_grid)
-                            base_p10 = np.percentile(base_areas_on_mean_grid, 10, axis=0)
-                            base_p90 = np.percentile(base_areas_on_mean_grid, 90, axis=0)
+                            # Per-depth percentiles across realizations, under the
+                            # sidebar convention (exceedance: P10 is the high case).
+                            from scopehc.utils import p10_p90_by_convention
+                            base_p10, base_p90 = p10_p90_by_convention(
+                                base_areas_on_mean_grid,
+                                bool(st.session_state.get("percentile_exceedance", True)),
+                                axis=0,
+                            )
                             
                             # Plot base area curves (grayish-red for P10/P90)
                             from scopehc.plots import rgba_from_hex

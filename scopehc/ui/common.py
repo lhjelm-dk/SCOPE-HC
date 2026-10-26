@@ -12,7 +12,6 @@ import streamlit as st
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.io as pio
-import matplotlib.pyplot as plt
 from scipy.stats import skew, norm, beta
 
 from scopehc.config import (
@@ -183,8 +182,6 @@ def init_theme() -> None:
     global _THEME_INITIALIZED
     if _THEME_INITIALIZED:
         return
-
-    plt.style.use("seaborn-v0_8-colorblind")
 
     pio.templates["scopehc_theme"] = pio.templates["plotly_white"]
     pio.templates["scopehc_theme"]["layout"]["colorway"] = [

@@ -108,7 +108,7 @@ PARAM_COLORS = {
 
 # Help text (short + clear)
 HELP = {
-    "quick_start": "1) Choose GRV method. 2) Set Spill & HC depths (and GOC for depth-based). 3) Enter Fluids (Bg, 1/Bo, GOR, CGR). 4) Set RFs. 5) Run and review P10/P50/P90.",
+    "quick_start": "1) Choose GRV method. 2) Set Spill & HC depths (and GOC for depth-based). 3) Enter Fluids (Bg, 1/Bo, GOR, CY). 4) Set RFs. 5) Run and review P10/P50/P90.",
     "grv_method": "Pick how GRV is computed. Depth-based methods support Gas–Oil Contact (GOC). Direct & Area×Thickness×GCF use an explicit oil/gas split.",
     "spill_point": "Spill point depth (m). The star (★) on depth plots marks the mean spill depth.",
     "eff_hc_depth": "Effective hydrocarbon contact (m): base of the hydrocarbon column.",
@@ -121,7 +121,7 @@ HELP = {
     "bg": "Gas FVF Bg (rb/scf). If using 1/Bg, units must be scf/rcf. Conversion: Bg = 1 / ((1/Bg)×5.614583).",
     "invbo": "Inverse Bo (STB/rb): converts reservoir barrels to stock-tank barrels.",
     "gor": "Solution GOR (scf/STB): associated gas per STB of oil.",
-    "cgr": "CGR (STB/MMscf): condensate per million scf of produced free gas.",
+    "cgr": "CY (STB/MMscf): condensate yield - condensate per million scf of produced free gas. Also written CGR, condensate-gas ratio.",
     "boe_factor": "Gas-to-BOE conversion (scf/BOE). Default 6,000 (USGS); heat-content bases often use 5,620–5,800 scf/BOE—adjust to match company guidance.",
     "trials": "Monte Carlo trials. Higher → smoother distributions, longer runtime.",
     "seed": "Random seed for reproducibility.",

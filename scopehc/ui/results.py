@@ -649,10 +649,16 @@ def render() -> None:
         numbered.table_caption("results.thr.tab")
 
     st.markdown("**THR Composition (mean):**")
-    mean_oil_boe = np.mean(Oil_BOE) / 1e6
-    mean_cond_boe = np.mean(Cond_BOE) / 1e6
-    mean_gas_free_boe = np.mean(Gas_free_BOE) / 1e6
-    mean_gas_assoc_boe = np.mean(Gas_assoc_BOE) / 1e6
+    # A BOE quantity needs the same conversion as the total it is compared
+    # against. Dividing by 1e6 unconditionally made the components 6.29x the
+    # Total row under SI, and the percentages sum to about 629%.
+    boe_scale = (
+        1e-6 if unit_system == "oilfield" else UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
+    )
+    mean_oil_boe = np.mean(Oil_BOE) * boe_scale
+    mean_cond_boe = np.mean(Cond_BOE) * boe_scale
+    mean_gas_free_boe = np.mean(Gas_free_BOE) * boe_scale
+    mean_gas_assoc_boe = np.mean(Gas_assoc_BOE) * boe_scale
     mean_thr_boe = thr_stats["mean"] if thr_stats else 0.0
 
     if mean_thr_boe > 0:
@@ -732,17 +738,22 @@ def render() -> None:
             f"Current factor: {gas_scf_per_boe:,.0f} scf/BOE"
         )
 
+        # The two branches used to define `conversion` with opposite senses - a
+        # divisor of 1e6 for oilfield, a multiplier of 1.59e-07 for metric - and
+        # the code below divided by both. Oilfield came out right and metric was
+        # inflated by 1/conversion**2, about 4e13. Both are multipliers now, as
+        # in the identical block forty lines above.
         if unit_system == "oilfield":
-            conversion = 1e6
+            conversion = 1e-6
             boe_unit_detail = "MMBOE"
         else:
             conversion = UNIT_CONVERSIONS["bbl_to_m3"] / 1e6
             boe_unit_detail = "Mm³ BOE"
 
-        oil_boe_display = Oil_BOE / conversion
-        cond_boe_display = Cond_BOE / conversion
-        gas_free_boe_display = Gas_free_BOE / conversion
-        gas_assoc_boe_display = Gas_assoc_BOE / conversion
+        oil_boe_display = Oil_BOE * conversion
+        cond_boe_display = Cond_BOE * conversion
+        gas_free_boe_display = Gas_free_BOE * conversion
+        gas_assoc_boe_display = Gas_assoc_BOE * conversion
         thr_display_converted = thr_display.copy()
 
         mean_oil = np.mean(oil_boe_display)

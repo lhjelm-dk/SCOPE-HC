@@ -556,21 +556,6 @@ SECTIONS: Tuple[Section, ...] = (
             "Oil and gas column distributions",
             items=(fig("results.columns.fig", "Oil and gas column heights"),),
         ),
-        # Declared, but not rendered today: results.py defines
-        # _render_saturation_summary() and render_saturation_plots() and calls
-        # neither. See the PR that added this.
-        sec("results.saturation", "Saturation distributions", children=(
-            sec(
-                "results.saturation.assumptions",
-                "Saturation assumptions",
-                items=(fig("results.saturation.assumptions.fig", "Saturation assumptions"),),
-            ),
-            sec(
-                "results.saturation.plots",
-                "Saturation distributions by zone",
-                items=(fig("results.saturation.plots.fig", "Saturation distribution"),),
-            ),
-        )),
         sec("results.crossplot", "Cross-plot and statistics"),
     )),
     sec("sensitivity", "Sensitivity", children=(

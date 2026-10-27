@@ -15,6 +15,7 @@ import plotly.io as pio
 from scipy.stats import skew, norm, beta
 
 from scopehc import numbering
+from scopehc import version
 from . import numbered
 from scopehc.config import (
     RB_PER_M3,
@@ -675,6 +676,11 @@ def render_custom_navigation() -> None:
             ):
                 st.session_state["_nav_target"] = item['page']
                 st.rerun()
+
+    # What is actually running. A SHA alone would not have caught the live app
+    # serving stale modules over a current checkout, so the marker also reports
+    # source files that changed after import. See scopehc/version.py.
+    st.sidebar.caption(version.marker())
 
 
 def render_sidebar_settings() -> None:

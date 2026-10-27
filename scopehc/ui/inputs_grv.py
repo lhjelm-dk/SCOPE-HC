@@ -829,6 +829,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
 
     elif grv_option == "Area × Thickness × GCF":
         st.caption("Provide Area, GCF, and h; GRV is calculated and shown below.")
+        numbered.heading("inputs.grv.atgcf")
         sA = render_param(
             "A", "Area A", "km²", defaults["A"]["dist"], defaults["A"], num_sims, stats_decimals=3,
             section="inputs.grv.atgcf.area",
@@ -1406,6 +1407,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
         _display_split_grv_results("atgcf")
 
     elif grv_option == "Depth-based: Top and Base res. + Contact(s)":
+        numbered.heading("inputs.grv.depth_topbase")
         st.caption(
             "Enter depth slices and Top/Base areas. Choose depth step, extrapolation, and depth distributions. "
             "GRV at Effective HC depth will be used in PV."
@@ -2238,6 +2240,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
         numbered.figure_caption("inputs.grv.abovespill.fig")
 
     elif grv_option == "Depth-based: Top + Res. thickness + Contact(s)":
+        numbered.heading("inputs.grv.depth_toponly")
         st.caption("Provide top structure depth table and constant thickness. GRV is integrated accordingly.")
         st.info("Depth in meters; areas in km². 1 km²·m = 10⁶ m³.")
         
@@ -2361,7 +2364,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 {"min": 100.0, "mode": 120.0, "max": 200.0},
                 num_sims,
                 stats_decimals=1,
-                section="inputs.grv.depths.resthickness",
+                section="inputs.grv.depth_toponly.resthickness",
             )
             st.session_state["sReservoirThickness"] = sThickness
             # CRITICAL: Values are already initialized by _initialize_grv_input_defaults()

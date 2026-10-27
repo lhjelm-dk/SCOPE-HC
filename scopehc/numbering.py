@@ -109,7 +109,7 @@ SECTIONS: Tuple[Section, ...] = (
                     tab("inputs.grv.direct.tab", "Direct GRV statistics"),
             ),
             ),
-            sec("inputs.grv.atgcf", "Area, thickness and geometric correction", children=(
+            sec("inputs.grv.atgcf", "Area × thickness × GCF", children=(
                 sec(
                     "inputs.grv.atgcf.area",
                     "Area",
@@ -167,23 +167,37 @@ SECTIONS: Tuple[Section, ...] = (
                     ),
                 ),
             )),
+            # One section per depth-based method. Their depth-area inputs really do
+            # differ - top and base areas against top area and a thickness - so each
+            # owns its own. What they share lives in "Depth distributions" below,
+            # which keeps one number per contact depth whichever method is on.
             sec(
-                "inputs.grv.deptharea",
-                "Depth-area relationship",
+                "inputs.grv.depth_topbase",
+                "Depth-based: top and base reservoir + contacts",
                 items=(
-                    fig("inputs.grv.deptharea.fig", "Depth versus area, with GRV and spill point"),
-                    tab("inputs.grv.deptharea.tab", "Depth-area table"),
+                    fig("inputs.grv.depth_topbase.fig", "Depth versus area, top and base"),
+                    tab("inputs.grv.depth_topbase.tab", "Depth-area table"),
+                ),
+            ),
+            sec(
+                "inputs.grv.depth_toponly",
+                "Depth-based: top + reservoir thickness + contacts",
+                items=(
+                    fig("inputs.grv.depth_toponly.fig", "Depth versus area, top only"),
+                    tab("inputs.grv.depth_toponly.tab", "Depth-area table"),
+                ),
+                children=(
+                    sec(
+                        "inputs.grv.depth_toponly.resthickness",
+                        "Reservoir thickness",
+                        items=(
+                            fig("inputs.grv.depth_toponly.resthickness.fig", "Reservoir thickness distribution"),
+                            tab("inputs.grv.depth_toponly.resthickness.tab", "Reservoir thickness statistics"),
+                        ),
+                    ),
                 ),
             ),
             sec("inputs.grv.depths", "Depth distributions", children=(
-                sec(
-                    "inputs.grv.depths.resthickness",
-                    "Reservoir thickness (top-only method)",
-                    items=(
-                        fig("inputs.grv.depths.resthickness.fig", "Reservoir thickness (top-only method) distribution"),
-                        tab("inputs.grv.depths.resthickness.tab", "Reservoir thickness (top-only method) statistics"),
-                    ),
-                ),
                 sec(
                     "inputs.grv.depths.areamult",
                     "Area uncertainty multiplier",

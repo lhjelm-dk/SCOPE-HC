@@ -3,6 +3,14 @@
 # Cloud app without a commit. Verified working with the versions in comments.
 # 1.56 is the floor because `st.iframe` first appears there; it replaces
 # `st.components.v1.html`, whose stated removal date has already passed.
+#
+# Touching this file is also what forces Streamlit Cloud to rebuild rather than
+# restart. On 2026-10-27 the live app was found serving page files from the
+# current commit while every module under scopehc/ was several commits behind,
+# and "Reboot app" did not clear it - the process kept the modules it had
+# imported. The last change here, removing matplotlib in #9, is where the
+# deployed modules were frozen. So a change to this file is the lever when a
+# deploy has not taken.
 streamlit>=1.56,<2.0      # 1.61.1
 numpy>=1.20,<3.0          # 2.3.4
 pandas>=1.3,<3.0          # 2.3.3

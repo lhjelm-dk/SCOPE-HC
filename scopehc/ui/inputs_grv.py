@@ -1560,6 +1560,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 "Base area (km2)": st.column_config.NumberColumn("Base area (km²)", format="%.10f"),
             },
         )
+        numbered.table_caption("inputs.grv.depth_topbase.tab")
         st.session_state["grv_table_input"] = edited
 
         colc1, colc2 = st.columns(2)
@@ -1942,7 +1943,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 height=400
             )
             st.plotly_chart(fig, width="stretch")
-            numbered.figure_caption("inputs.grv.depths.goc.fig")
+            numbered.figure_caption("inputs.grv.depth_topbase.fig")
             st.caption("Depth-area and volume relationships. GRV = Top Volume - Base Volume.")
         
         # Arrays to store split GRV and column heights
@@ -2351,6 +2352,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                 "Top area (km2)": st.column_config.NumberColumn("Top area (km²)", format="%.3f"),
             },
         )
+        numbered.table_caption("inputs.grv.depth_toponly.tab")
         st.session_state["top_only_table"] = ed_top
 
         col_top1, col_top2 = st.columns(2)
@@ -2829,7 +2831,7 @@ def render_grv(num_sims: int, defaults: Dict[str, Any], show_inline_tips: bool) 
                                       legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
                                       width=None, height=400)
                     st.plotly_chart(fig, width="stretch")
-                    numbered.figure_caption("inputs.grv.depths.goc.fig")
+                    numbered.figure_caption("inputs.grv.depth_toponly.fig")
 
                     st.caption("Contacts integration using A_top(z): left shows top area; right shows cumulative ∫A(z)dz with Top/Spill/GOC/HCWC.")
         

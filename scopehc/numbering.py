@@ -175,7 +175,7 @@ SECTIONS: Tuple[Section, ...] = (
                 "inputs.grv.depth_topbase",
                 "Depth-based: top and base reservoir + contacts",
                 items=(
-                    fig("inputs.grv.depth_topbase.fig", "Depth versus area, top and base"),
+                    fig("inputs.grv.depth_topbase.fig", "Depth versus area and volume, top and base"),
                     tab("inputs.grv.depth_topbase.tab", "Depth-area table"),
                 ),
             ),
@@ -183,7 +183,7 @@ SECTIONS: Tuple[Section, ...] = (
                 "inputs.grv.depth_toponly",
                 "Depth-based: top + reservoir thickness + contacts",
                 items=(
-                    fig("inputs.grv.depth_toponly.fig", "Depth versus area, top only"),
+                    fig("inputs.grv.depth_toponly.fig", "Depth versus area and volume, top only"),
                     tab("inputs.grv.depth_toponly.tab", "Depth-area table"),
                 ),
                 children=(
